@@ -594,5 +594,25 @@ public class HelloController{
 按照图2.5中所标识的序号，Spring MVC请求->响应的完整工作流程如下：
 
 1. 用户向服务器发送请求，请求被Spring的前端控制器DispatcherServlet截获。
-2. DispatcherServlet对请求URL（统一资源定位符）进行解析，得到URI（请求资源标识符）。然后根据该URI，调用HandlerMapping获得该Handler配置的所有相关对象，
+2. DispatcherServlet对请求URL（统一资源定位符）进行解析，得到URI（请求资源标识符）。然后根据该URI，调用HandlerMapping获得该Handler配置的所有相关对象，包括Handler对象以及Handler对象对应的拦截器，这些对象会被封装到一个HandlerExeCutionChain对象当中返回。
+3. DIspatcherServlet根据获得的Handler，选择一个合适的HandlerAdapter。HandlerAdapter的设计符合面向对象中的单一职责原则，代码架构清晰，便于维护，最重要的是，代码可服用性高。HandlerAdapter会被用于处理多种Handler，调用Handler实际处理请求的方法，例如hello方法。
+4. 提取请求中的模型数据，开始执行Handler（Controller）。在填充Handler的入参过程中，根据配置，Spring将帮你做一些额外的工作。
+   * **消息转换。** 将请求（如Json、xml等数据）转换成一个对象，将对象转换为指定的响应信息。
+   * **数据转换。** 对请求消息进行数据格式化，如String转换成Integer、Double等。
+   * **数据格式化。** 对请求消息进行数据格式化，如将字符串转换成格式化数字或格式化日期等。
+   * **数据验证。** 验证数据的有效性（长度、格式等），验证结果存储在BindingResult或Error中。
+5. Handler执行完成后，先DispatcherServlet返回一个ModelAndView对象，ModelAndView对象中应该包含视图名或视图名和模型。
+6. 根据返回的ModelAndView对象，选择一个合适的ViewResolver（视图解析器）返回给DispatcherServlet。
+7. ViewREsolver结合Model和View来渲染视图。
+8. 将视图渲染结果返回给客户端。
+
+以上8个步骤：DispatcherServlet、HandlerMapping、HandlerAdapter和ViewResolver等对象协同工作，完成Spring MVC请求->响应的整个流程，这些对象所完成的工作对于开发者来说都是不可见的，开发者并不需要关心这些对象是如何工作的，开发者只需要在Handler（Controller）当中完成对请求的业务处理。
+
+## 2.6 本章小结
+
+本章介绍了Spring MVC的入门知识，包括如何使用Spring MVC开发一个简单的Web应用。在Spring MVC中，开发者无须编写自己的前端控制器，使用Spring提供的DispatcherServlet就可以分派请求。Spring MVC传统风格的控制器开发方式是实现Controller接口，从Spring 2.5版本开始，提供了一个更好的控制器开发方式，即采用注解类型。最后，详细分析了Spring MVC请求->响应的完整工作流程。
+
+第3章将重点介绍基于注解的控制器。
+
+
 
