@@ -527,7 +527,7 @@ http://localhost:8080/context/login?loginname=jack&password=123456
 
 > **参考：** [SpringMVC的各种参数绑定方式](http://www.shenhuanjie.com/2018/11/05/various-parametric-binding-methods-of-springmvc/)
 
-**示例：@RequestMapping和@RequestParam注解的使用
+**示例：@RequestMapping和@RequestParam注解的使用**
 
 新建一个项目RequestMappingTest，加入需要的jar文件，示例代码如下：
 
@@ -787,3 +787,619 @@ http://localhost:8080/user/register
 输入登录名“test”，密码“123456”，真实姓名“测试用户”，单击“注册”按钮。请求将会被提交到UserController类的register方法进行注册，注册的用户信息会保存到UserController类的userList静态集合中。注册成功，将会跳转到如图3.3所示的登录界面。
 
 输入登录名“test”，密码“123456”，单击“登录”按钮。请求将会被提交到UserController类的login方法进行登录验证，验证成功，将会跳转到如图3.4所示的欢迎界面。
+
+### 3.3.2 @PathVariable注解
+
+org.springframework.web.bind.annotation.PathVariable注解类型可以非常方便地获得请求URL中的动态参数。@PathVariable注解只支持一个属性value，类型为String，表示绑定的名称，如果省略则默认绑定同名参数。示例代码如下：
+
+```java
+@RequestMapping(value="/pathVariableTest/{userId}")
+public void pathVariableTest(@PatherVariable Integer userId){
+    ……
+}
+```
+
+加入请求的URL为“http://localhost:8080/pathVariableTest/1”，则自动将URL中模板变量{userId}绑定到通过@PathVariable注解的同名参数上，即userId变量将赋值为1。
+
+### 3.3.3 @RequestHeader注解
+
+org.springframework.web.bind.annotation.RequestHeader注解类型用于将请求头信息区数据映射到功能处理方法的参数上。
+
+使用@RequestHeader注解可指定如表3.3所示的属性。
+
+| 属性         | 类型    | 是否必要 | 说明                           |
+| ------------ | ------- | -------- | ------------------------------ |
+| name         | String  | 否       | 指定请求头绑定的名称           |
+| value        | String  | 否       | name属性的别名                 |
+| required     | boolean | 否       | 指示参数是否必须绑定           |
+| defaultValue | String  | 否       | 如果没有传递参数而使用的默认值 |
+
+@RequestHeader注解示例代码如下：
+
+```java
+@RequestMapping(value="/requestHeaderTest")
+public void requestHeaderTest(
+    @RequestHeader("User-Agent") String userAgent,
+    @RequestHeader(value="Accept") String[]accepts)
+```
+
+以上配置自动将请求头“User-Agent”的值赋到userAgent变量上，并将“Accept”请求头的值赋到accepts参数上。
+
+### 3.3.4 @CookieValue注解
+
+org.springframework.web.bind.annotation.CookieValue用于将请求的Cookie数据映射到功能处理方法的参数上。
+
+使用@CookieValue注解可指定如表3.4所示的属性。
+
+| 属性         | 类型    | 是否必要 | 说明                           |
+| ------------ | ------- | -------- | ------------------------------ |
+| name         | String  | 否       | 指定请求头绑定的名称           |
+| value        | String  | 否       | name属性的别名                 |
+| required     | boolean | 否       | 指示参数是否必须绑定           |
+| defaultValue | String  | 否       | 如果没有传递参数而使用的默认值 |
+
+@CookieValue注解示例代码如下：
+
+```java
+@RequestMapping(value="/cookieValueTest")
+public void cookieValueTest(
+    @CookieValue(value="JSESSIONID", defaultValue="") String sessionId)
+```
+
+以上配置会自动将JSESSIONID值设置到sessionId参数上，defaultValue表示Cookie中没有JSESSIONID时默认为空。
+
+**示例：@PathVariable、@RequestHeader和@CookieValue注解的使用。**
+
+新建一个项目DataBindingTest，加入所需的jar文件，示例代码如下。
+
+```java
+package org.fkit.controller;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+// Controller注解用于指示该类是一个控制器，可以同时处理多个请求动作
+@Controller
+public class DataBindingController {
+    // 静态的日志类LogFactory
+    private static final Log logger = LogFactory.getLog(DataBindingController.class);
+
+    // 测试@PathVariable注解
+    // 该方法映射的请求为http://localhost:8080/pathVariableTest/{userId}
+    @RequestMapping(value = "/pathVariableTest/{userId}")
+    public void pathVariableTest(@PathVariable Integer userId) {
+        logger.info("通过@PathVathVariable获得数据：" + userId);
+    }
+
+    // 测试@RequestHeader注解
+    // 该方法映射的请求为http://localhost:8080/requestHeaderTest
+    @RequestMapping(value = "/requestHeaderTest")
+    public void requestHeaderTest(
+            @RequestHeader("User-Agent") String userAgent,
+            @RequestHeader(value = "Accept") String[] accepts) {
+        logger.info("通过@RequestHeaderTest获得数据：" + userAgent);
+        for (String accept :
+                accepts) {
+            logger.info(accept);
+        }
+    }
+
+    // 测试@CookieValue注解
+    @RequestMapping(value = "/cookieValueTest")
+    public void cookieValueTest(
+            @CookieValue(value = "JSESSIONID", defaultValue = "") String sessionId) {
+        logger.info("通过@RequestHeaderTest获得数据：" + sessionId);
+    }
+}
+```
+
+DataBindingTest类的代码解析如下：
+
+1. pathVariableTest(@PathVariable Integer userId)方法用于测试@PathVariable注解，它会将请求路径“/pathVariableTest/{userId}“中userId的值设置到方法参数的userId变量当中。
+2. requestHeaderTest(@RequestHeader(“User-Agent”) String userAgent)和@RequestHeader(value=“Accept”) String[] accepts)方法用于测试@RequestHeader注解，它会将请求头“User-Agent”的值赋到userAgent变量上，并将“Accept”请求头的值赋到accepts参数上。
+3. cookieValueTest(@CookieValue(value=“JSESSIONID” ,defaultValue=“”) String sessionId)方法会自动将JSESSIONID值入参到sessionId参数上，defaultValue表示Cookie中没有JSESSION是默认为空。
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>数据绑定测试</title>
+</head>
+<body>
+<h2>数据绑定测试</h2>
+<a href="/pathVariableTest/1">测试@PathVariable注解</a><br><br>
+<a href="/requestHeaderTest">测试@RequestHeader注解</a><br><br>
+<a href="/cookieValueTest">测试@CookieValue注解</a>
+</body>
+</html>
+```
+
+此外，还需要在web.xml文件中配置Spring MVC的前端控制器DispatcherServlet，因为每次配置基本一致，故此处不再赘述，读者可自行配置。
+
+同时Spring MVC还需要springmvc-conofig.xml配置文件，该文件内容和ControllerTest项目中的springmvc-config.xml文件一致，读者可自行配置。
+
+部署DataBindingTest这个Web应用，在浏览器中输入如下URL来测试应用：
+
+```wiki
+http://localhost:8080
+```
+
+会看到如图3.5所示的界面，表示Spring MVC成功跳转到初始化页面index.jsp。
+
+### 3.3.5 @SessionAttriabutes注解
+
+org.springframework.web.bind.annotation.SessionAttributes注解类型允许我们有选择地指定Model中的哪些属性需要转存到HttpSession对象当中。
+
+使用@SessionAttributes注解可指定如表3.5所示的属性。
+
+| 属性  | 类型        | 是否必要 | 说明                                                 |
+| ----- | ----------- | -------- | ---------------------------------------------------- |
+| names | String[]    | 否       | Model中属性的名称，即存储在HttpSession当中的属性名称 |
+| value | String[]    | 否       | names属性的别名                                      |
+| types | Class<？>[] | 否       | 指示参数是否必须绑定                                 |
+
+@SessionAttributes只能声明在类上，而不能声明在方法上。
+
+**示例：@SessionAttributes注解的使用**
+
+```java
+package org.fkit.controller;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.fkit.entity.User;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.SessionAttributes;
+
+// Controller注解用于指示该类是一个控制器，可以同时处理多个请求动作
+@Controller
+// 将Model中的属性名为user的属性放入HttpSession对象当中
+@SessionAttributes("user")
+public class SessionAttributesController {
+    // 静态的日志类LogFactory
+    private static final Log logger = LogFactory.getLog(SessionAttributes.class);
+
+    // 该方法映射的请求为http://localhost:8080/{formName}
+    @RequestMapping(value = "/{formName}")
+    public String loginForm(@PathVariable String formName) {
+        logger.info("loginForm 被调用……");
+        // 动态跳转页面
+        return "/"+formName;
+    }
+
+    //该方法映射的请求为http://localhost:8080/login
+    @RequestMapping(value = "/login")
+    public String login(
+            @RequestParam("loginname") String loginname,
+            @RequestParam("password") String password,
+            Model model) {
+        logger.info("login 被调用……");
+        // 创建User对象，装载用户信息
+        User user = new User();
+        user.setLoginname(loginname);
+        user.setPassword(password);
+        user.setUsername("admin");
+        // 将user对象添加到Model当中
+        model.addAttribute("user", user);
+        return "/welcome";
+    }
+}
+```
+
+接下来创建一个登录页面loginForm.jsp，该页面代码和前面RequestMappingTest的代码相同，读者可以参考配套资源中的代码。
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>欢迎</title>
+</head>
+<body>
+<h3>欢迎[${requestScope.user.username}]登录</h3>
+<%--访问request作用域中的user对象;--%>
+${requestScope.user.username} <br>
+<%--访问session作用域中的user对象--%>
+${sessionScope.user.username} <br>
+</body>
+</html>
+```
+
+在浏览器中输入如下URL来测试应用
+
+```wiki
+http://localhost:8080/loginForm
+```
+
+会看到如图3.6所示界面
+
+![1541561263089](assets/1541561263089.png)
+
+
+
+输入登录名“test”，密码“123456”，单击“登录”按钮。请求将会被提交到SessionAttributesController类的login方法，该方法将会创建User对象来保存数据，并将其设置到Model当中。因为类上面使用了@SessionAttributes注解，故User同时也会被设置到HttpSession作用域当中。方法执行完跳转到如图3.7所示的欢迎界面。
+
+![1541561389013](assets/1541561389013.png)
+
+可以看到，User对象被成功设置到了HttpSession作用域当中。
+
+@SessionAttributes还有如下写法：
+
+```java
+@SessionAttributes(types={User.class},value="user")
+```
+
+还可以设置多个对象到HttpSession当中：
+
+```java
+@SessionAttributes(types={User.class,Dept.class},value={"user","dept"})
+```
+
+types属性用来指定放入HttpSession当中的对象类型。
+
+### 3.3.6 @ModelAttribute注解
+
+org.springframework.web.bind.annotation.ModelAttribute注解类型将请求参数绑定到Model对象。
+
+@ModelAttribute注解只支持一个属性value，类型为String，表示绑定的属性名称。
+
+> **提示：**
+>
+> 被@ModelAttribute注释的方法会在Controller每个方法执行前被执行，因此在一个Controller映射到多个URL时，要谨慎使用。
+
+@ModelAttribute注解的使用方式有很多种，下面为读者逐一介绍。
+
+**示例：@ModelAttribute注解的使用**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+    <head>
+        <title>测试@ModelAttribute的不同用法</title>
+    </head>
+    <body>
+        <h3>测试@ModelAttribute的不同用法<</h3>
+        <a href="/loginForm1">测试@ModelAttribute(value="")注释返回具体类的方法</a>
+            <br><br>
+        <a href="/loginForm2">测试@ModelAttribute注释void返回值的方法</a><br><br>
+        <a href="/loginForm3">测试@ModelAttribute注释返回具体类的方法</a><br><br>
+        <a href="/loginForm4">测试@ModelAttribute和@RequestMapping同时注释一个方法</a>
+            <br><br>
+        <a href="/loginForm5">测试@ModelAttribute注释一个方法的参数</a><br><br>
+    </body>
+</html>
+```
+
+```java
+package org.fkit.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+@Controller
+public class FormController {
+    // 该方法映射请求为http://localhost:8080/{formName}
+    @RequestMapping(value = "/{formName}")
+    public String loginForm(@PathVariable String formName) {
+        // 动态跳转页面
+        return "/" + formName;
+    }
+}
+```
+
+**1. 测试@ModelAttribute(value=“”)注释返回具体类的方法**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+    <head>
+        <title>测试@ModelAttribute(value=“”)注释返回具体类的方法</title>
+    </head>
+    <body>
+        <h3>测试@ModelAttribute(value=“”)注释返回具体类的方法</h3>
+        <form action="/login1">
+            <table>
+                <tr>
+                    <td>
+                        <label for="loginname">登录名：</label>
+                    </td>
+                    <td>
+                        <input type="text" id="loginname" name="loginname"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="submit" id="submit" value="登录">
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </body>
+</html>
+```
+
+```java
+package org.fkit.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+@Controller
+public class ModelAttribute1Controller {
+    // 使用@ModelAttribute注释的value属性，来指定model属性的名称，model属性的值就是方法的
+    // 返回值
+    @ModelAttribute("loginname")
+    public String userModel1(
+            @RequestParam("loginname") String loginname){
+        return loginname;
+    }
+    @RequestMapping(value = "/login1")
+    public String login1(){
+        return "/result1";
+    }
+}
+```
+
+ModelAttribute1Controller类中除了@RequestMapping映射的login1方法之外，还提供了一个userModel1方法，该方法上有一个@ModelAttribute注解，此处@ModelAttribute注解默认的value值为”loginname“，用来指定model属性的名称，而model属性的值就是userModel1方法的返回值。被@ModelAttribute注解的userModel1方法会先于login1调用，它把请求参数loginname的值赋给loginname变量，并设置了一个属性loginname到Model当中，而属性的值就是loginname变量的值。
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+    <head>
+        <title>Title</title>
+    </head>
+    <body>
+        访问request作用范围域中的loginname对象：${requestScope.loginname} 
+        <br>
+    </body>
+</html>
+```
+
+在跳转的result1.jsp中可以访问到由@ModelAttribute设置的loginname的值。
+
+此外，还需要在web.xml文件中配置Spring MVC的前端控制器DispatcherServlet。因为每次配置基本一致，故此处不再赘述，读者可执行配置。
+
+同时，Spring MVC还需要springmvc-config.xmo配置文件，该文件内容和ControllerTest项目中的springmvc-config.xml文件一致，读者可自行配置。
+
+部署ModelAttributeTest这个Web应用，在浏览器中输入如下URL来测试应用：
+
+```wiki
+http://localhost:8080/
+```
+
+会看到如图3.8所示的界面，表示Spring MVC成功跳转到初始页面index.jsp。
+
+![1541573087659](assets/1541573087659.png)
+
+点击“测试@ModelAttribute(value="")注释返回具体类的方法”超链接发送请求，跳转到loginForm1.jsp，如图3.9所示。
+
+![1541573142744](assets/1541573142744.png)
+
+输入登录名“test”，单击“登录”按钮发送请求，而后将先调用哦userModel1方法，再调用login1方法，并跳转到result1.jsp，如图3.10所示。
+
+![1541573205066](assets/1541573205066.png)
+
+可以看到，在request作用域中访问到了Model的值。
+
+**2. 测试@ModelAttribute注释void返回值的方法**
+
+```html
+<h3>测试@ModelAttribute注释void返回值的方法</h3>
+<form action="/login2">
+    <table>
+        <tr>
+            <td>
+                <label for="loginname">登录名：</label>
+            </td>
+            <td>
+                <input type="text" id="loginname" name="loginname">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="password">密码：</label>
+            </td>
+            <td>
+                <input type="password" id="password" name="password">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <input type="submit" id="submit" value="登录">
+            </td>
+        </tr>
+    </table>
+</form>
+```
+
+```java
+@Controller
+public class ModelAttribute2Controller {
+    //model属性名称和值由model.addAttribute()实现，前提是要在方法中加入一个
+    // Model类型的参数
+    @ModelAttribute
+    public void userModel2(
+            @RequestParam("loginname") String loginname,
+            @RequestParam("password") String password,
+            Model model) {
+        model.addAttribute("loginname", loginname);
+        model.addAttribute("password", password);
+    }
+
+    @RequestMapping(value = "/login2")
+    public String login2() {
+        return "/result2";
+    }
+}
+```
+
+ModelAttribute2Controller类中除了@RequestMapping映射的login2方法之外，还提供了一个userModel2方法，该方法上有一个@ModelAttribute注解。userModel2方法会先于login2调用，它把请求参数值赋给对应变量，model属性名称和值由model.addAttribute()方法实现，前提是要在方法中加入一个Model类型的参数。
+
+```html
+    <%--访问request作用域中的loginname对象--%>
+    ${requestScope.loginname}<br>
+    <%--访问request作用域中的password对象--%>
+    ${requestScope.password}<br>
+```
+
+在跳转的result2.jsp中可以访问到由@ModelAttribute设置的loginname和password的值。
+
+在浏览器中输入如下URL来测试应用：http://localhost:8080/ ，将会跳转到如图3.8所示页面，点击“测试@ModelAttribute注释void返回值的方法”超链接发送请求，将会跳转到loginForm2.jsp页面，如图3.11所示。
+
+![1541574962263](assets/1541574962263.png)
+
+输入登录名“test”，密码“123456”，单击“登录”按钮发送请求，而后将先调用userModel2方法，再调用login2方法，并跳转到result2.jsp页面，如图3.12所示。
+
+![1541575042983](assets/1541575042983.png)
+
+可以看到，在request作用域中访问到了Model的值。
+
+**3. 测试@ModelAttribute注释返回具体类的方法**
+
+loginForm3.jsp和loginForm2.jsp页面内容一致，读者可自行参考，此处不再赘述。
+
+```java
+@Controller
+public class ModelAttribute3Controller {
+    // 静态List<User>集合，此处代替数据库用来保存注册的用户信息
+    private static List<User> userList;
+
+    // ModelAttribute3Controller类的构造器，初始化List<User>集合
+    public ModelAttribute3Controller() {
+        super();
+        userList = new ArrayList<User>();
+        User user1 = new User("test", "123456", "测试用户");
+        User user2 = new User("admin", "123456", "管理员");
+        // 存储User用户，用于模拟数据库数据
+        userList.add(user1);
+        userList.add(user2);
+    }
+
+    // 根据登录名和密码查询用户，用户存在返回包含用户信息的User对象，不存
+    // 在返回null
+    public User find(String loginname, String password) {
+        for (User user : userList) {
+            if (user.getLoginname().equals(loginname) && user.getPassword().equals(password)) {
+                return user;
+            }
+        }
+        return null;
+    }
+
+    // model属性的名称没有被定义，它由返回类型隐含表示，如这个方法返回User类
+    // 型，那么这个model属性的名称是user。
+    @ModelAttribute
+    public User userModel3(
+            @RequestParam("loginname") String loginname,
+            @RequestParam("password") String password) {
+        return find(loginname, password);
+    }
+
+    @RequestMapping(value = "/login3")
+    public String login3() {
+        return "/result3";
+    }
+}
+```
+
+ModelAttribute3Controller类中除了@RequestMapping映射的login3方法之外，还提供了一个userModel3方法，该方法上有一个@ModelAttribute注解。userModel3方法会先于login3方法调用，这里model属性的名称没有被指定，它由@ModelAttribute注解的userModel3方法的返回类型隐含表示，如这个方法返回User类型，那么这个model属性的名称就是user。此处find(loginname,password)方法是模拟数据库根据登录名和密码查询用户功能实现。
+
+```html
+访问request作用域中的user对象：${requestScope.user.username}<br>
+```
+
+在跳转的result2.jsp中可以访问到由@ModelAttribute设置的loginname和password的值。
+
+在浏览器中输入如下URL来测试应用：http://localhost:8080/ ，跳转到如图3.8所示页面，点击“测试@ModelAttribute注释返回具体类的方法”超链接发送请求，将跳转到loginForm3.jsp页面，如图3.11所示，输入登录名“test”，密码“123456”，单击“登录”按钮发送请求，而后将先调用userModel3方法，再调用login3方法，并跳转到result3.jsp页面，如图3.13所示。
+
+![1541576355817](assets/1541576355817.png)
+
+可以看到，在request作用范围域中访问到了User对象。
+
+**4. 测试@ModelAttribute和@RequestMapping同时注释一个方法**
+
+loginForm4.jsp和loginForm2.jsp页面内容一致，读者可自行参考，此处不再赘述。
+
+```java
+@Controller
+public class ModelAttribute4Controller {
+    // 此时login4方法的返回值并不是一个视图名称，而是model属性的值，视图名称是@RequestMapping的value值“/login4"。
+    // Model的属性名称由@ModelAttribute(value="")指定，相当于在request中封装了username(key)=admin(value)。
+    @RequestMapping(value = "/login4")
+    @ModelAttribute(value = "username")
+    public String login4() {
+        return "admin";
+    }
+}
+```
+
+在ModelAttribute4Controller中，@ModelAttribute和@RequestMapping同时注释一个方法，此时login4方法的返回值并不是一个视图名称，而是model属性的值，视图名称是@RequestMapping的value值“/login4”。Model的属性名称由@ModelAttribute的value值指定，这相当于在request中封装了username(key)=admin(value)。
+
+注意，此处login4方法跳转的结果是“/login4”。
+
+ ```html
+访问request作用域中的username对象：${requestScope.username}<br>
+ ```
+
+在浏览器中输入如下URL来测试应用：http://localhost:8080/ ，跳转到如图3.8所示页面，点击“测试@ModelAttribute和@RequestMapping同时注释一个方法”超链接发送请求，将跳转到loginForm4.jsp页面，如图3.11所示，输入登录名“test”，密码“123456”，单击“登录”按钮发送请求，将调用login4方法，并跳转到login4.jsp页面，如图3.14所示。
+
+![1541577945861](assets/1541577945861.png)
+
+可以看到，在request作用域中访问到了username的值，也就是login4方法的返回值“admin”。
+
+**5. 测试@ModelAttribute注释一个方法的参数**
+
+loginForm5.jsp和loginForm2.jsp页面内容一致，读者可自行参考，此处不再赘述。
+
+```java
+@Controller
+public class ModelAttribute5Controller {
+    // model属性名称就是value值，即"user"，model属性对象就是方法的返回值。
+    @ModelAttribute("user")
+    public User userModel5(
+            @RequestParam("loginname") String loginname,
+            @RequestParam("password") String password) {
+        User user = new User();
+        user.setLoginname(loginname);
+        user.setPassword(password);
+        return user;
+    }
+
+    // @ModelAttribute("user") User user注释方法参数，参数user的值就是userModel5()方法中的model属性。
+    @RequestMapping(value = "/login5")
+    public String login5(@ModelAttribute("user") User user) {
+        user.setUsername("管理员");
+        return "result5";
+    }
+}
+```
+
+ModelAttribute5Controller类中除了@RequestMapping映射的login5方法之外，提供了一个userModel5方法，该方法上有一个@ModelAttribute(“user”)注解。userModel5方法会先于login5调用，这里model属性名称就是value值，即“user”，model属性对象就是userModel5方法的返回值User。
+
+login5方法的参数User使用了@ModelAttribute(“user”)注解，表示参数user的值就是userModel5()方法中的model属性。
+
+```html
+访问request作用域中的user对象：${requestScope.user.username}<br>
+```
+
+在浏览器中输入如下URL来测试应用：http://localhost:8080/ ，跳转到如图3.8所示页面，点击“测试@ModelAttribute注释一个方法的参数”超链接发送请求，将跳转到loginForm5.jsp页面，如图3.11所示，输入登录名“test”，密码“123456”，单击“登录”按钮发送请求，将调用login5方法，并跳转到login5.jsp页面，如图3.15所示。
+
+![1541578709691](assets/1541578709691.png)
+
+可以看到，在request作用范围域中访问到了User对象。
+
+> **小结：**
+>
+> @ModelAttribute注解的使用方法有很多中，非常灵活，读者可以根据业务需求选择使用。
+
