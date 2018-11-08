@@ -664,9 +664,9 @@ UserController类的代码解释如下：
 1. UserController类使用了@Controller注解，是一个控制类。
 2. UserController类上面使用了@RequestMapping(value=“/user”)注解，表示该控制器处理的所有请求都被映射到user路径下。
 3. 本来没有使用数据库存储用户注册信息，所以定义了一个静态的List集合userList用来代替数据库存储用户数据。
-4. registerForm方法使用了@RequestMapping(value=“/register”,method=RequestMethod.GET)注解，表示该方法映射的请求为http://localhost:8080/RequestMappingTest/user/register，并且只支持GET请求。该方法返回字符串“registerForm”，参考springmvc-config.xml中的配置信息，可以知道该方法只是跳转到registerForm.jsp注册页面。
-5. register方法使用了@RequestMapping(value=“/register”,method=RequestMethod.POST)注解，表示该方法映射的请求为http://localhost:8080/RequestMappingTest/user/register，并且只支持POST请求。该方法使用@RequestParam注解将指定的请求参数赋值给方法中形参，之后创建了一个User对象保存用户传递的注册信息，最后将User对象存储到userList集合当中，之后的登录页面就可以到userList集合当中进行用户登录业务逻辑的判断。该方法返回字符串“loginForm”，并跳转到loginForm.jsp登录页面。
-6. login方法使用了@RequestMapping(“/login”)注解，表示该方法映射的请求为http://localhost:8080/RequestMappingTest/user/login，这里没有设置method属性表示支持所有方式的请求。该方法也使用@RequestParam注解将指定的请求参数赋值给方法中的形参。之后到集合中查找用户是否存在，此处用来模拟数据库验证。login方法中还有一个参数Model对象，调用该对象的addAttribute方法可以将数据添加到request当中（关于Model对象的知识，在第4章重点介绍）。最后，如果用户登录成功则返回字符串“welcome”，并跳转到welcome.jsp欢迎页面；登录失败则返回字符串“loginForm”，并跳转到loginForm.jsp登录页面。
+4. registerForm方法使用了@RequestMapping(value=“/register”,method=RequestMethod.GET)注解，表示该方法映射的请求为`http://localhost:8080/RequestMappingTest/user/register `，并且只支持GET请求。该方法返回字符串“registerForm”，参考springmvc-config.xml中的配置信息，可以知道该方法只是跳转到registerForm.jsp注册页面。
+5. register方法使用了@RequestMapping(value=“/register”,method=RequestMethod.POST)注解，表示该方法映射的请求为`http://localhost:8080/RequestMappingTest/user/register` ，并且只支持POST请求。该方法使用@RequestParam注解将指定的请求参数赋值给方法中形参，之后创建了一个User对象保存用户传递的注册信息，最后将User对象存储到userList集合当中，之后的登录页面就可以到userList集合当中进行用户登录业务逻辑的判断。该方法返回字符串“loginForm”，并跳转到loginForm.jsp登录页面。
+6. login方法使用了@RequestMapping(“/login”)注解，表示该方法映射的请求为`http://localhost:8080/RequestMappingTest/user/login` ，这里没有设置method属性表示支持所有方式的请求。该方法也使用@RequestParam注解将指定的请求参数赋值给方法中的形参。之后到集合中查找用户是否存在，此处用来模拟数据库验证。login方法中还有一个参数Model对象，调用该对象的addAttribute方法可以将数据添加到request当中（关于Model对象的知识，在第4章重点介绍）。最后，如果用户登录成功则返回字符串“welcome”，并跳转到welcome.jsp欢迎页面；登录失败则返回字符串“loginForm”，并跳转到loginForm.jsp登录页面。
 
 > **提示：**
 >
@@ -799,7 +799,7 @@ public void pathVariableTest(@PatherVariable Integer userId){
 }
 ```
 
-加入请求的URL为“http://localhost:8080/pathVariableTest/1”，则自动将URL中模板变量{userId}绑定到通过@PathVariable注解的同名参数上，即userId变量将赋值为1。
+加入请求的URL为“`http://localhost:8080/pathVariableTest/1` ”，则自动将URL中模板变量{userId}绑定到通过@PathVariable注解的同名参数上，即userId变量将赋值为1。
 
 ### 3.3.3 @RequestHeader注解
 
