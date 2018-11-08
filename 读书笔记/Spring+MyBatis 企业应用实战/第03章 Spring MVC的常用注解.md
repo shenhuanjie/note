@@ -84,7 +84,7 @@ HelloWorldController是一个基于@Controller注解的控制器，@RequestMappi
 
 部署ControllerTest这个Web应用，在浏览器中输入如下URL来测试应用：
 
-```tiki wiki
+```wiki
 http://localhost:8080/helloWorld
 ```
 
@@ -1402,4 +1402,84 @@ login5方法的参数User使用了@ModelAttribute(“user”)注解，表示参�
 > **小结：**
 >
 > @ModelAttribute注解的使用方法有很多中，非常灵活，读者可以根据业务需求选择使用。
+
+## 3.4 信息转换
+
+### 3.4.1 HttpMessageConverter&lt;T>接口
+
+HttpMessageConverter&lt;T>是Spring 3.0之后新增的一个重要接口，它负责将请求信息转换为一个对象（类型为T），并将对象（类型为T）绑定到请求方法的参数中或输出为响应信息。
+
+DispatcherServlet默认已经装配了RequestMappingHandlerAdapter作为HandlerAdapter组件的实现类，即HttpMessageConverter由RequestMappingHandlerAdapter使用，将请求信息转换为对象，或将对象转换为响应信息。
+
+HttpMessageConverter&lt;T>接口中定义了以下几个方法：
+
+* **boolean canRead(Class&lt;?>clazz,MediaType mediaType)。** 该方法指定转换器可以读取的对象类型，即转换器可将请求信息转换为clazz类型的对象，同时指定支持的MIME类型（text/html、application/json等）。MIME媒体类型在RFC2616中定义，具体请参考http://tools.ietf.org/html/rec2626#section-3.7。
+* **boolean canWrite(Class&lt;?>clazz,MediaType mediaType)。** 该方法指定转换器可以将clazz类型的对象写到响应流当中，响应流支持的媒体类型在mediaType中定义。
+* **List&lt;MediaType>getSupportedMediaTypes()。**该方法返回当前转换器支持的媒体类型。
+* **T read(Class&lt;？extends T>clazz,HttpInputMessage inputMessage)。** 该方法将请求信息转换为T类型的对象。
+* **void write(T t,MediaType contentType,HttpOutputMessage outputMessage)。** 该方法将T类型的对象写到响应流当中，同时指定响应的媒体类型为contentType。
+
+Spring 为HttpMessageConverter&lt;T>提供了多个实现类，这些实现类组成了一个功能强大、用途广泛的信息转换家族。详细说明如下：
+
+* **StringHttpMessageConverter。** 将请求信息转换为字符串。泛型T为String类型，可以读取所有媒体类型（`*/*`）的请求信息，可通过设置supportedMediaTypes属性指定媒体类型。响应信息的媒体类型为text/plain（即Content-Type的值）。
+* **FormHttpMessageConverter。** 将表单数据读取到MultiValueMap中。泛型T为org.springframework.util.MultiValueMap&lt;String,?>类型，支持读取application/x-www-form-urlencoded的类型，但不支持读取multipart/form-data的类型。可以写application/x-www-form-urlencoded及multipart/form-data类型的响应信息。
+* **XmlAwareFormHttpMessageConverter。**继承自FormHttpMessageConverter，如果部分表单属性是XML数据，则可用该转换器进行转换。
+* **ResourceHttpMessageConverter。** 读写org.springframework.core.io.Resource对象。泛型T为org.springspringwork.core.io.Resource对象，可以读取所有媒体类型（`*/*`）的请求信息。如果类路径下提供了JAF（Java Activation Framework），则根据Resource类型指定响应的类型，否则响应的类型为application/octet-stream。
+* **BufferedImageHttpMessageConverter。** 读写BufferedImage对象。泛型T为BufferedImage对象，可以读取所有类型（`*/*`）的请求信息，返回BufferedImage相应的类型，也可以通过contentType显式指定。
+* **ByteArrayHttpMessageConverter。** 读写二进制数据。泛型T为byte[]类型，可以读取所有类型（`*/*`）的请求信息，可以通过设置supportMediaTypes属性指定类型，响应信息的媒体类型为application/octet-stream。
+* **SourceHttpMessageConverter。** 读写javax.xml.transform.Source类型的数据。泛型T为javax.xml.transform.Source类型及其扩展类，包括javax.xml.transform.dom.DOMSource、javax.xml.transform.sax.SAXSource及javax.xml.transform.stream.StreamSource，可以读取text/xml和application/xml类型请求，响应信息的类型为text/xml和application/xml。
+* **MarshallingHttpMessageConverter。** 通过Spring 的org.springframework.oxm.Marshalling（将Java对象转换成XML）和Unmarshaller（将XML解析为Java对象）读取XML消息。泛型T为Object类型，可以读取text/xml和application/xml类型请求，响应信息的类型为text/xml和application/xml。
+* **Jaxb2RootElementHttpMessageConverter。** 通过JAXB2读取XML消息，将请求消息转换到注解XmlRootElement和XmlType作用的类中。泛型T为Object类型，可以读取text/xml和application/xml类型请求，响应信息的类型为text/xml和application/xml。
+* **MappingJackson2HttpMessageConverter。** 利用Jackson开源类包读取JSON数据。泛型T为Object类型，可以读取applicaion/json类型的数据，响应信息的类型为application/json。
+* **RssChannelHttpMessageConverter。** 能够读写RSS种子消息。泛型T为com.sun.syndication.feed.rss.Channel类型，可以读取application/rss+xml类型的数据，响应信息类型为application/rss+xml。
+* **AtormFeedHttpMessageConverter。** 能够读写RSS种子消息。泛型T为com.sum.syndication.feed.atom.Feed类型，可以读取application/atom+xml类型的数据，响应信息的类型为application/atom+xml。
+
+RequestMappingHandlerAdapter默认已经装配了一下的HttpMessageConverter：
+
+* **StringHttpMessageConverter**
+* **ByteArrayHttpMessageConverter**
+* **SourceHttpMessageConverter**
+* **XmlAwareFormHttpMessageConverter**
+
+如果需要装配其他类型的HttpMessageConverter，则可以在Spring的Web容器的上下文中自行定义一个RequestMappingHandlerAdapter，如下所示：
+
+```xml
+<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+    <property name="messageConverters">
+        <list>
+            <bean class="org.springframework.http.converter.StringHttpMessageConverter"/>
+            <bean class="org.springframework.http.converter.xml.XmlAwareFormHttpMessageConverter"/>
+            <bean class="org.springframework.http.converter.BufferedImageHttpMessageConverter"/>
+        </list>
+    </property>
+</bean>
+```
+
+> **提示：**
+>
+> 如果在Spring Web容器中显式定义了一个RequestMappingHandlerAdapter，则Spring MVC的RequestMappingHandlerAdapter默认装配的HttpMessageConverter将不再起作用。
+
+### 3.4.2 转换JSON数据
+
+Spring MVC提供了处理JSON格式请求/响应的HttpMessageConverter：
+
+* **MappingJackson2HttpMessageConverter。**利用Jackson开源类包处理JSON的请求或响应消息。
+
+因此只需要在Spring Web容器中为RequestMappingHandlerAdapter装配处理JSON的HttpMessageConverter，并在交互过程中通过请求的Accept指定MIME类型，Spring MVC就可以使服务端的处理方式和客户端JSON格式的消息进行通信了，开发者几乎无须关心通信层数据格式的问题，可以将精力集中到业务处理上面。
+
+org.springframework.web.bind.annotation.RequestBody注解用于读取Request请求的body部分数据，使用系统默认配置的HttpMessageConverter进行解析，然后把相应的数据绑定到Controller中方法的参数上。
+
+当前台页使用GET或POST方式提交数据时，数据编码格式由请求头的ContentType指定。可以分为以下几种情况：
+
+* **application/x-www-form-urlencoded**，这种情况的数据@RequestParam、@ModelAttribute也可以处理，并且很方便，当然@RequestBody也能处理。
+* **multipart/form-data**，@RequestBody不能处理这种格式的数据
+* **application/json**、**application/xml**等格式的数据，必须使用@RequestBody来处理。
+
+在实际开发工作中使用@RequestBody注解可以很方便地接收JSON格式的数据，并将其转换成对应的数据类型。
+
+Spring的官方文档说明，Spring MVC默认使用MappingJackson2HttpMessageConverter转换JSON格式的数据，Jackson开源类包可以非常轻松地将Java对象转换成json对象和xml文档，同样也可以将json对象、xml文档转换成Java对象。读者可以自行下载或者在配套的资源文件中找到Jackson的第三方开源类包。
+
+**示例：接收JSON格式的数据**
+
+创建一个JsonRequestTest项目，在WebContent目录下创建一个js目录，加入jquery和json2的js文件，在WEB-INF/lib目录中加入Jackson的jar文件。
 
