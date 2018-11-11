@@ -1255,7 +1255,7 @@ ModelAttribute2Controller类中除了@RequestMapping映射的login2方法之外�
 
 在跳转的result2.jsp中可以访问到由@ModelAttribute设置的loginname和password的值。
 
-在浏览器中输入如下URL来测试应用：http://localhost:8080/ ，将会跳转到如图3.8所示页面，点击“测试@ModelAttribute注释void返回值的方法”超链接发送请求，将会跳转到loginForm2.jsp页面，如图3.11所示。
+在浏览器中输入如下URL来测试应用：`http://localhost:8080/ `，将会跳转到如图3.8所示页面，点击“测试@ModelAttribute注释void返回值的方法”超链接发送请求，将会跳转到loginForm2.jsp页面，如图3.11所示。
 
 ![1541574962263](assets/1541574962263.png)
 
@@ -1321,7 +1321,7 @@ ModelAttribute3Controller类中除了@RequestMapping映射的login3方法之外�
 
 在跳转的result2.jsp中可以访问到由@ModelAttribute设置的loginname和password的值。
 
-在浏览器中输入如下URL来测试应用：http://localhost:8080/ ，跳转到如图3.8所示页面，点击“测试@ModelAttribute注释返回具体类的方法”超链接发送请求，将跳转到loginForm3.jsp页面，如图3.11所示，输入登录名“test”，密码“123456”，单击“登录”按钮发送请求，而后将先调用userModel3方法，再调用login3方法，并跳转到result3.jsp页面，如图3.13所示。
+在浏览器中输入如下URL来测试应用：`http://localhost:8080/ `，跳转到如图3.8所示页面，点击“测试@ModelAttribute注释返回具体类的方法”超链接发送请求，将跳转到loginForm3.jsp页面，如图3.11所示，输入登录名“test”，密码“123456”，单击“登录”按钮发送请求，而后将先调用userModel3方法，再调用login3方法，并跳转到result3.jsp页面，如图3.13所示。
 
 ![1541576355817](assets/1541576355817.png)
 
@@ -1352,7 +1352,7 @@ public class ModelAttribute4Controller {
 访问request作用域中的username对象：${requestScope.username}<br>
  ```
 
-在浏览器中输入如下URL来测试应用：http://localhost:8080/ ，跳转到如图3.8所示页面，点击“测试@ModelAttribute和@RequestMapping同时注释一个方法”超链接发送请求，将跳转到loginForm4.jsp页面，如图3.11所示，输入登录名“test”，密码“123456”，单击“登录”按钮发送请求，将调用login4方法，并跳转到login4.jsp页面，如图3.14所示。
+在浏览器中输入如下URL来测试应用：`http://localhost:8080/` ，跳转到如图3.8所示页面，点击“测试@ModelAttribute和@RequestMapping同时注释一个方法”超链接发送请求，将跳转到loginForm4.jsp页面，如图3.11所示，输入登录名“test”，密码“123456”，单击“登录”按钮发送请求，将调用login4方法，并跳转到login4.jsp页面，如图3.14所示。
 
 ![1541577945861](assets/1541577945861.png)
 
@@ -1393,7 +1393,7 @@ login5方法的参数User使用了@ModelAttribute(“user”)注解，表示参�
 访问request作用域中的user对象：${requestScope.user.username}<br>
 ```
 
-在浏览器中输入如下URL来测试应用：http://localhost:8080/ ，跳转到如图3.8所示页面，点击“测试@ModelAttribute注释一个方法的参数”超链接发送请求，将跳转到loginForm5.jsp页面，如图3.11所示，输入登录名“test”，密码“123456”，单击“登录”按钮发送请求，将调用login5方法，并跳转到login5.jsp页面，如图3.15所示。
+在浏览器中输入如下URL来测试应用：`http://localhost:8080/ `，跳转到如图3.8所示页面，点击“测试@ModelAttribute注释一个方法的参数”超链接发送请求，将跳转到loginForm5.jsp页面，如图3.11所示，输入登录名“test”，密码“123456”，单击“登录”按钮发送请求，将调用login5方法，并跳转到login5.jsp页面，如图3.15所示。
 
 ![1541578709691](assets/1541578709691.png)
 
@@ -1413,7 +1413,7 @@ DispatcherServlet默认已经装配了RequestMappingHandlerAdapter作为HandlerA
 
 HttpMessageConverter&lt;T>接口中定义了以下几个方法：
 
-* **boolean canRead(Class&lt;?>clazz,MediaType mediaType)。** 该方法指定转换器可以读取的对象类型，即转换器可将请求信息转换为clazz类型的对象，同时指定支持的MIME类型（text/html、application/json等）。MIME媒体类型在RFC2616中定义，具体请参考http://tools.ietf.org/html/rec2626#section-3.7。
+* **boolean canRead(Class&lt;?>clazz,MediaType mediaType)。** 该方法指定转换器可以读取的对象类型，即转换器可将请求信息转换为clazz类型的对象，同时指定支持的MIME类型（text/html、application/json等）。MIME媒体类型在RFC2616中定义，具体请参考`http://tools.ietf.org/html/rec2626#section-3.7`。
 * **boolean canWrite(Class&lt;?>clazz,MediaType mediaType)。** 该方法指定转换器可以将clazz类型的对象写到响应流当中，响应流支持的媒体类型在mediaType中定义。
 * **List&lt;MediaType>getSupportedMediaTypes()。**该方法返回当前转换器支持的媒体类型。
 * **T read(Class&lt;？extends T>clazz,HttpInputMessage inputMessage)。** 该方法将请求信息转换为T类型的对象。
@@ -1482,4 +1482,58 @@ Spring的官方文档说明，Spring MVC默认使用MappingJackson2HttpMessageCo
 **示例：接收JSON格式的数据**
 
 创建一个JsonRequestTest项目，在WebContent目录下创建一个js目录，加入jquery和json2的js文件，在WEB-INF/lib目录中加入Jackson的jar文件。
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" pageEncoding="utf-8" %>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html" ; charset="UTF-8">
+    <title>测试接收JSON格式的数据</title>
+    <script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="js/json2.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            testRequestBody();
+        });
+
+        function testRequestBody() {
+            $.ajax("${pageContext.request.contextPath}/json/testRequestBody",
+                // 发送请求的URL字符串
+                {
+                    dataType: "json",// 预期服务器返回的数据类型
+                    type: "post",// 请求方式POST或GET
+                    contentType: "application/json",// 发送信息至服务器时的内容编码格式
+                    // 发送到服务器的数据
+                    data: JSON.stringify({id: 1, name: "Spring MVC企业应用实战"}),
+                    async: true//默认设置下，所有请求均为异步请求。如果设置为false，则发送同步请求
+                    // 请求成功后的回调函数
+                    success: function (data) {
+                        console.log(data);
+                        $("#id").html(data.id);
+                        $("#name").html(data.name);
+                        $("#author").html(data.author);
+                    },
+                    error: function () {
+                        alert("数据发送失败");
+                    }
+                }
+            )
+        }
+    </script>
+</head>
+<body>
+编号：<span id="id"></span><br>
+书名：<span id="name"></span><br>
+作者：<span id="author"></span><br>
+</body>
+</html>
+```
+
+index.jsp页面代码分析如下：
+
+（1）页面使用jquery发送json数据，在页面的`<head>`部分，引入jquery和json2的js文件。
+
+（2）页面载入时调用testRequestBody函数。
+
+（3）testRequestBody函数发送异步请求到“json/testRequestBody”，注意加粗的代码contentType:“application/json”，其表示发送的内容编码格式为json类型；data:JSON.stringify({id:1,name:“Spring MVC 企业应用实战”})，表示发送一个json数据；请求成功将返回一个json数据，接到返回的数据后将数据设置到页面的`<span>`当中。
 
