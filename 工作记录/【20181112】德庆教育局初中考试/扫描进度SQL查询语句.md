@@ -1,3 +1,11 @@
+### 阅卷进度查询页面
+
+http://localhost:8081/PJJY/examLock.do?scanProgressList&examId=f4270f2d-f9a7-4d98-a619-767771f66efd
+
+
+
+![1542019759948](assets/1542019759948.png)
+
 ### 查询考试结果表中假删的数据
 
 ```sql
