@@ -1537,3 +1537,8 @@ index.jsp页面代码分析如下：
 
 （3）testRequestBody函数发送异步请求到“json/testRequestBody”，注意加粗的代码contentType:“application/json”，其表示发送的内容编码格式为json类型；data:JSON.stringify({id:1,name:“Spring MVC 企业应用实战”})，表示发送一个json数据；请求成功将返回一个json数据，接到返回的数据后将数据设置到页面的`<span>`当中。
 
+```java
+
+```
+
+setJson方法中的
