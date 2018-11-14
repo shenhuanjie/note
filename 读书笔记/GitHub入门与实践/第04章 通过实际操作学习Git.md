@@ -583,7 +583,7 @@ Automatic merge failed; fix conflicts and then commit the result.
 
 #### 查看冲突部分并将其解决
 
-用编辑器打开README.md文件，就会发现其内容变丑了下面这个样子。
+用编辑器打开README.md文件，就会发现其内容变成了下面这个样子。
 
 ```
 # Git教程
@@ -596,3 +596,453 @@ Automatic merge failed; fix conflicts and then commit the result.
 
 ```
 
+====以上的部分是以前HEAD的内容，以下的部分是要合并的fix-B分支中的内容。我们在编辑器中将其改为想要的样子。
+
+```
+# Git教程
+
+	- feature-A
+	- fix-B
+```
+
+如上所示，本次修正让feature-A与fix-B的内容并存于文件之中。但是在实际的软件开发中，往往需要删除其中之一，所以各位在处理冲突时，务必要仔细分析冲突部分的内容后再行修改。
+
+#### 提交解决后的结果
+
+冲突解决后，执行git add命令与git commit命令。
+
+```bash
+$ git add README.md
+$ git commit -m "Fix conflict"
+[master 3099c46] Fix conflict
+ 1 file changed, 1 insertion(+)
+```
+
+由于本次更改解决了冲突，所以提交信息记为”Fix conflict“。
+
+### git commit –amend——修改提交信息
+
+要修改上一条提交信息，可以使用git commit --amend命令。
+
+我们将上一条提交信息记为了“Fix conflict”，但它其实是fix-B分支的合并，解决合并时发生的冲突只是过程之一，这样标记是在不妥。于是，我们要修改这条提交信息。
+
+```bash
+$ git commit --amend
+```
+
+执行上面的命令后，编辑器就会启动。
+
+```bash
+Fix conflict
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# Date:      Wed Nov 14 17:09:02 2018 +0800
+#
+# On branch master
+# Changes to be committed:
+#       modified:   README.md
+#
+```
+
+编辑器中显示的内容如上所示，其中包含之前的提交信息。请将提交信息的部分修改为Merge branch ‘fix-B’，然后保存文件，关闭编辑器。
+
+```baash
+[master 304396f] Merge branch 'fix-B'
+```
+
+随后会显示上面这条结果。现在执行git log --graph命令，可以看到提交日志中的相应内容已经被修改。
+
+```bash
+$ git log --graph
+*   commit 5d14ea672844c1b7bbb07eee4be386f5d36d8124 (HEAD -> master)
+|\  Merge: c9d4a7e 2940e74
+| | Author: shenhuanjie <shenhuanjie@live.cn>
+| | Date:   Wed Nov 14 17:22:25 2018 +0800
+| |
+| |     Merge branch 'fix-B'
+| |
+| * commit 2940e74385fd651b4c765d0b9c9a4f46ba82f928 (fix-B)
+| | Author: shenhuanjie <shenhuanjie@live.cn>
+| | Date:   Tue Nov 13 17:16:30 2018 +0800
+| |
+| |     Fix B
+| |
+* |   commit c9d4a7e15c88f71829537fd34fd485c48ca37806
+|\ \  Merge: 4ccb5ed cc48086
+| |/  Author: shenhuanjie <shenhuanjie@live.cn>
+|/|   Date:   Tue Nov 13 16:19:38 2018 +0800
+| |
+| |       Merge branch 'feature-A'
+| |
+| * commit cc4808697802c95cbec76dccefbcbd7acd3fe53a (feature-A)
+|/  Author: shenhuanjie <shenhuanjie@live.cn>
+|   Date:   Tue Nov 13 15:43:23 2018 +0800
+|
+|       Add feature-A
+|
+* commit 4ccb5edf8e815e94217e77c23caca07514d890f0
+| Author: shenhuanjie <shenhuanjie@live.cn>
+| Date:   Tue Nov 13 15:13:23 2018 +0800
+|
+|     Add index
+|
+* commit dc2e2510e3a50fcb451360046c99d9b576b1a945
+| Author: shenhuanjie <shenhuanjie@live.cn>
+| Date:   Tue Nov 13 14:41:49 2018 +0800
+|
+|     commit
+|
+* commit 4a479effb41d58702126dce6cb3eedbe3c4ce55a
+  Author: shenhuanjie <shenhuanjie@live.cn>
+  Date:   Tue Nov 13 12:02:06 2018 +0800
+
+      First commit
+```
+
+### git rebase -i——压缩历史
+
+在合并特性分支之前，如果发现已提交的内容中有些拼写错误等，不妨提交一个修改，然后将这个修改包含到前一个提交之中，压缩成一个历史记录。这是个会经常用到的技巧，让我们来实际操作体会一下。
+
+#### 创建feature-C分支
+
+首先，新建一个feature-C特性分支。
+
+```bash
+$ git checkout -b feature-C
+switched to a new branch 'feature-C'
+```
+
+作为feature-C的功能实现，我们在README.md文件中添加一行文字，并且故意留下拼写错误，以便之后修正。
+
+```bash
+# Git教程
+
+	- feature-A
+	- fix-B
+	- faeture-C
+```
+
+提交这部分内容。这个小小的变更就没必要先执行git add命令再执行git commit命令了，我们用git commit -am命令来一次完成这两步操作。
+
+```bash
+$ git commit -am "Add feature-C"
+[feature-C 725131d] Add feature-C
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+```
+
+#### 修正拼写错误
+
+现在来修正刚才预留的拼写错误。请各位自行修正README.md文件的内容，修正后的差别如下所示。
+
+```bash
+$ git diff
+diff --git a/README.md b/README.md
+index ccff532..be244f2 100644
+--- a/README.md
++++ b/README.md
+@@ -2,4 +2,4 @@
+
+        - feature-A
+        - fix-B
+-       - faeture-C
++       - feature-C
+```
+
+然后进行提交
+
+```bash
+$ git commit -am "Fix typo"
+[feature-C fdee3b6] Fix typo
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+```
+
+错字漏字等失误称作typo，所以我们将提交信息即为“Fix typo”。
+
+实际上，我们比希望在历史记录中看到这类提交，因为健全的历史记录并不需要它们。如果能在最初提交之前就发现并修正这些错误，也就不会出现这类提交了。
+
+#### 更改历史
+
+因此，我们来更改历史。将“Fix typo”修正的内容与之前一次的提交合并，在历史记录中合并为一次完美的提交。为此，我们要用到git rebase命令。
+
+#### 合并至master分支
+
+feature-C分支的使命告一段落，我们将它与master分支合并。
+
+```bash
+$ git checkout master
+Switched to branch 'master'
+
+$ git merge --no-ff feature-C
+Merge made by the 'recursive' strategy.
+ README.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+```
+
+master分支整合了feature-C分支。开发进展顺利。
+
+```bash
+$ git log --graph
+*   commit 0c192808ab41b9aac0adb423a7a5142a38fce8cb (HEAD -> master)
+|\  Merge: 5d14ea6 fdee3b6
+| | Author: shenhuanjie <shenhuanjie@live.cn>
+| | Date:   Wed Nov 14 17:42:40 2018 +0800
+| |
+| |     Merge branch 'feature-C'
+| |
+| * commit fdee3b61b555cee1ba3079c3116e22e6300dcc9a (feature-C)
+| | Author: shenhuanjie <shenhuanjie@live.cn>
+| | Date:   Wed Nov 14 17:35:34 2018 +0800
+| |
+| |     Fix typo
+| |
+| * commit 725131da20e7fb40b44bd37116169a4821508681
+|/  Author: shenhuanjie <shenhuanjie@live.cn>
+|   Date:   Wed Nov 14 17:33:42 2018 +0800
+|
+|       Add feature-C
+|
+*   commit 5d14ea672844c1b7bbb07eee4be386f5d36d8124
+|\  Merge: c9d4a7e 2940e74
+| | Author: shenhuanjie <shenhuanjie@live.cn>
+| | Date:   Wed Nov 14 17:22:25 2018 +0800
+| |
+| |     Merge branch 'fix-B'
+| |
+| * commit 2940e74385fd651b4c765d0b9c9a4f46ba82f928 (fix-B)
+| | Author: shenhuanjie <shenhuanjie@live.cn>
+| | Date:   Tue Nov 13 17:16:30 2018 +0800
+| |
+| |     Fix B
+| |
+* |   commit c9d4a7e15c88f71829537fd34fd485c48ca37806
+|\ \  Merge: 4ccb5ed cc48086
+| |/  Author: shenhuanjie <shenhuanjie@live.cn>
+|/|   Date:   Tue Nov 13 16:19:38 2018 +0800
+| |
+| |       Merge branch 'feature-A'
+| |
+| * commit cc4808697802c95cbec76dccefbcbd7acd3fe53a (feature-A)
+|/  Author: shenhuanjie <shenhuanjie@live.cn>
+|   Date:   Tue Nov 13 15:43:23 2018 +0800
+|
+|       Add feature-A
+|
+* commit 4ccb5edf8e815e94217e77c23caca07514d890f0
+| Author: shenhuanjie <shenhuanjie@live.cn>
+| Date:   Tue Nov 13 15:13:23 2018 +0800
+|
+|     Add index
+|
+* commit dc2e2510e3a50fcb451360046c99d9b576b1a945
+| Author: shenhuanjie <shenhuanjie@live.cn>
+| Date:   Tue Nov 13 14:41:49 2018 +0800
+|
+|     commit
+|
+* commit 4a479effb41d58702126dce6cb3eedbe3c4ce55a
+  Author: shenhuanjie <shenhuanjie@live.cn>
+  Date:   Tue Nov 13 12:02:06 2018 +0800
+
+      First commit
+
+```
+
+## 4.4 推送至远程仓库
+
+Git是分散型版本管理系统，但我们前面所学习的，都是针对单一本地仓库的操作。下面，我们将开始接触远在网络另一头的远程仓库。远程仓库顾名思义，是与我们本地仓库相对独立的另一个仓库。让我们先在GitHub上创建一个仓库，并将其设置为本地仓库的远程仓库。
+
+请参考第3章的3.2节在GitHub上新建一个仓库。为防止与其他仓库混淆，仓库名请与本地仓库保持一致，即git-tutorial。创建时请不要勾选Initialize this repository with a README.md选项（图4.8）。因为一旦勾选该选项，GitHub一侧的仓库就会自动生成README文件，从创建之初便与本地仓库失去了整合性。虽然到时也可以强制覆盖，但为防止这一情况发生还是建议不要勾选该选项，直接点击Create repository创建仓库。
+
+### git remote add——添加到远程仓库
+
+在GitHub上创建的仓库路径为“git@github.com:shenhuanjie/git-tutorial.git”。现在我们用git remote add命令将它设置成本地仓库的远程仓库。
+
+```bash
+$ git remote add origin git@github.com:shenhuanjie/git-tutorial.git
+```
+
+按照上述格式执行git remote add命令之后，Git会自动将git@github.com:shenhuanjie/git-tutorial.git远程仓库的名称设置为origin（标识符）。
+
+### git push——推送至远程仓库
+
+#### 推送至master分支
+
+如果想将当前分支下本地仓库中的内容推送给远程仓库，需要用到git push命令。现在假定我们在master分支下进行操作。
+
+```bash
+$ git push -u origin master
+Enumerating objects: 26, done.
+Counting objects: 100% (26/26), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (26/26), 1.93 KiB | 123.00 KiB/s, done.
+Total 26 (delta 4), reused 0 (delta 0)
+remote: Resolving deltas: 100% (4/4), done.
+remote:
+remote: Create a pull request for 'master' on GitHub by visiting:
+remote:      https://github.com/shenhuanjie/git-tutorial/pull/new/master
+remote:
+To github.com:shenhuanjie/git-tutorial.git
+ * [new branch]      master -> master
+Branch 'master' set up to track remote branch 'master' from 'origin'.
+```
+
+像这样执行git push命令，当前分支的内容就会被推送给远程仓库origin的master分支设置为本地仓库当前分支的upstream（上游）。添加了这个参数，将来运行git pull命令从远程仓库获取内容时，本地仓库的这个分支就可以直接从origin的master分支获取内容，省去了例外添加参数的麻烦。
+
+执行该操作后，当前本地仓库master分支的内容将会被推送到GitHub的远程仓库中。在GitHub上也可以确认远程master分支的内容和本地master分支相同。
+
+#### 推送至master以外的分支
+
+除了master分支之外，远程仓库也可以创建其他分支。举个例子，我们在本地仓库中创建了feature-D分支，并将它同名形式push至远程仓库。
+
+```bash
+$ git checkout -b feature-D
+Switched to a new branch 'feature-D'
+```
+
+我们在本地仓库中创建了feature-D分支，现在将它push给远程仓库并保持分支名称不变。
+
+```bash
+$ git push -u origin feature-D
+Total 0 (delta 0), reused 0 (delta 0)
+remote:
+remote: Create a pull request for 'feature-D' on GitHub by visiting:
+remote:      https://github.com/shenhuanjie/git-tutorial/pull/new/feature-D
+remote:
+To github.com:shenhuanjie/git-tutorial.git
+ * [new branch]      feature-D -> feature-D
+Branch 'feature-D' set up to track remote branch 'feature-D' from 'origin'.
+```
+
+现在，在远程仓库的GitHub页面就可以查看feature-D分支了。
+
+## 4.5从远程仓库获取
+
+上一节中我们把在GitHub上新建的仓库设置成了远程仓库，并向这个仓库push了feature-D分支。现在，所有能够访问这个远程仓库的人都可以获取feature-D分支并加以修改。
+
+本节中我们从实际开发者的角度出发，在另一个目录下新建一个本地仓库，学习从远程仓库获取内容的相关操作。这就相当于我们刚刚执行过push操作的目标仓库又有了另一名新开发者来共同开发。
+
+### git clone——获取远程仓库
+
+#### 获取远程仓库
+
+首先我们换到其他目录下，将GitHub上的仓库clone到本地。不要与之前操作的仓库在同一目录下。
+
+```bash
+$ git clone git@github.com:shenhuanjie/git-tutorial.git
+Cloning into 'git-tutorial'...
+remote: Enumerating objects: 26, done.
+remote: Counting objects: 100% (26/26), done.
+remote: Compressing objects: 100% (6/6), done.
+Receiving objects: 100% (26/26), done.
+Resolving deltas: 100% (4/4), done.
+remote: Total 26 (delta 4), reused 26 (delta 4), pack-reused 0
+```
+
+执行git clone命令后我们会默认处于master分支下，同时系统会自动将origin设置成该远程仓库的标识符。也就是说，当前本地仓库的master分支与GitHub端远程仓库（origin）的master分支在内容上是完全相同的。
+
+```bash
+$ git branch -a
+* master
+  remotes/origin/HEAD -> origin/master
+  remotes/origin/feature-D
+  remotes/origin/master
+```
+
+我们用git branch -a命令查看当前分支的相关信息。添加-a参数可以同时显示本地仓库和远程仓库的分支信息。
+
+结果显示了remotes/origin/feature-D，证明我们的远程仓库中已经有了feature-D分支。
+
+#### 获取远程的feature-D分支
+
+我们试着将feature-D分支获取至本地仓库。
+
+```bash
+$ git checkout -b feature-D origin/feature-D
+Switched to a new branch 'feature-D'
+Branch 'feature-D' set up to track remote branch 'feature-D' from 'origin'.
+```
+
+-b 参数的后面是本地仓库中新建分支的名称。为了便于理解，我们仍将其命名为feature-D，让它与远程仓库的对应分支保持同名。新建分支名称后面是获取来源的分支名称。例子中指定了origin/feature-D，就是说以名为origin的仓库（这里指GitHub端的仓库）的feature-D分支为来源，在本地仓库中创建feature-D分支。
+
+#### 向本地的feature-D分支提交更改
+
+现在假定我们是另一名开发者，要做一个新的提交。在README.md文件中添加一行文字，查看更改。
+
+```bash
+$ git diff
+diff --git a/README.md b/README.md
+index be244f2..1886982 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,6 @@
+ # Git教程
+
+-       - feature-A
+-       - fix-B
+-       - feature-C
++- feature-A
++- fix-B
++- feature-C
++- feature-D
+```
+
+按照之前学过的方式提交即可。
+
+```bash
+$ git commit -am "Add feature-D"
+[master 51f18bf] Add feature-D
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+```
+
+#### 推送feature-D分支
+
+现在来推送feature-D分支。
+
+```bash
+$ git push
+Enumerating objects: 5, done.
+Counting objects: 100% (5/5), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (2/2), done.
+Writing objects: 100% (3/3), 276 bytes | 92.00 KiB/s, done.
+Total 3 (delta 0), reused 0 (delta 0)
+To github.com:shenhuanjie/git-tutorial.git
+   0c19280..51f18bf  master -> master
+```
+
+从远程仓库获取feature-D分支，在本地仓库中提交更改，再将feature-D分支推送回远程仓库，通过这一系列操作，就可以与其他开发者相互合作，共同培育feature-D分支，实现某些功能。
+
+### git pull——获取最新的远程仓库分支
+
+现在我们放下刚刚操作的目录，回到原先的那个目录下。这边的本地仓库中只创建了feature-D分支，并没有在feature-D分支中进行任何提交。然而远程仓库的feature-D分支中已经有了我们刚刚推送的提交。这时我们就可以使用git pull命令，将本地的feature-D分支更新到最新状态。当前分支为feature-D分支。
+
+```bash
+$ git pull origin feature-D
+remote: Enumerating objects: 5, done.
+remote: Counting objects: 100% (5/5), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 3 (delta 0), reused 3 (delta 0), pack-reused 0
+Unpacking objects: 100% (3/3), done.
+From github.com:shenhuanjie/git-tutorial
+ * branch            feature-D  -> FETCH_HEAD
+   0c19280..aec5544  feature-D  -> origin/feature-D
+error: Your local changes to the following files would be overwritten by merge:
+        README.md
+Please commit your changes or stash them before you merge.
+Aborting
+Updating 0c19280..aec5544
+```
+
+GitHub端远程仓库中的feature-D分支是最新状态，所以本地仓库中的feature-D分支就得到了更新。今后只需要像平常一样在本地进行提交再push给远程仓库，就可以与其他开发者同时在同一个分支中进行作业，不断给feature-D增加新功能。
+
+如果两人同时修改了同一部分的源代码，push时就很容易发生冲突。所以多名开发者在同一个分支中进行作业时，为减少冲突情况的发生，建议更频繁地进行push和pull操作。
+
+## 4.7 小结
+
+本章就理解本书所需的Git操作进行了讲解。只要掌握了本章的知识，就足以应付日常开发中的大部分操作了。
+
+遇到不常见的特殊操作时，还请各位读者查阅本书介绍的参考资料，确保操作的正确性。
