@@ -148,3 +148,192 @@ Git Bash
 
 使用Maven，通过导入Spring Boot的starter模块，可以将许多程序依赖包自动导入工程中。使用Maven的parent   POM，还可以更容易地管理依赖的版本和使用默认的配置，工程中的模块也可以很方便地继承它。例如，使用1.2.1节创建的工程，修改pom.xml文件，使用如代码清单1-1所示的简单Maven配置，基本上就能为一个使用Spring Boot开发框架的Web项目开发提供所需的相关依赖。
 
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>springboot.example</groupId>
+    <artifactId>spring-boot-hello</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>1.3.2.RELEASE</version>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+    </dependencies>
+</project>
+```
+
+这里只使用了一个依赖配置spring-boot-starter-web和一个parent配置spring-boot-starter-parent，在工程的外部库（External Libraries）列表中，它自动引入的依赖包如代码清单1-2所示。
+
+![1542592137003](assets/1542592137003.png)
+
+在工程的外部库列表中，Spring Boot已经导入了整个springframework依赖，以及autoconfigure、logging、slf4j、jackson、tomcat插件等，所以这些都是一个Web项目可能需要用到的东西（包括你已经考虑到的和没有考虑的），它真是一个聪明的助手。
+
+### 1.3.2 一个简单的实例
+
+Spring Boot的官方文档中提供了一个最简单的Web实例程序，这个实例只使用了几行代码，如代码清单1-3所示。虽然简单，但实际上这已经可以算作是一个完整的Web项目了。
+
+```java
+package springboot.example;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@SpringBootApplication
+@RestController
+public class Application {
+    @RequestMapping("/")
+    String home() {
+        return "hello";
+    }
+
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}
+```
+
+这个简单实例，首先是一个Spring Boot应用的程序入口，或者叫作主程序，其中使用了一个注解@SpringBootApplication来标注它是一个Spring Boot应用，main方法使它成为一个主程序，将在应用启动时首先被执行。其次，注解@RestController同时标注这个程序还是一个控制器，如果在浏览器中访问应用根目录，它将调用home方法，并输出字符串：hello。
+
+## 1.4 运行与发布
+
+本章实例工程的完整代码可以使用IDEA直接从GitHub的`https://github.com/chenfromsz/spring-boot-hello.git`中检出，如图1-15所示，单击Clone按钮将整个项目复制到本地。
+
+![1542594450711](assets/1542594450711.png)
+
+### 1.4.1 在IDEA环境中运行
+
+在IDEA中打开Run菜单，选择Edit Configuration打开Run/Debug Configurations对话框，在配置界面的左边侧边栏中选择增加一个Application或Spring Boot配置项目，然后在工作目录中选择工程所在的根目录，主程序选择代码清单1-3创建的类：springboot.example.Application，并将配置保存为hello，如图1-16所示。
+
+然后选择Run或Debug运行hello配置项目。如果启动成功，将在控制台中输出类似如下信息：
+
+![1542594743957](assets/1542594743957.png)
+
+从上面的输出中可以看出，Tomcat默认开启了8080端口。要访问这个应用提供的服务，可以在浏览器的地址栏中输入`http://localhost:8080/`。这样就可以看到我们期望的输出字符：hello。
+
+![1542612704341](assets/1542612704341.png)
+
+### 1.4.2 将应用打包发布
+
+上面操作演示了在IDEA环境中如何运行一个应用。如果我们想把应用发布出去，需要怎么做呢？可以将代码清单1-1中的Maven配置增加一个发布插件来实现。如代码清单1-4所示，增加了一个打包插件：spring-boot-maven-plugin，并增加了一行打包的配置：`<packaging>jar</packaging>`，这行配置指定将应用工程打包成jar文件。
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>springboot.example</groupId>
+    <artifactId>spring-boot-hello</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>1.3.2.RELEASE</version>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+```
+
+这样就可以在IDEA中增加一个打包的配置，打开Run/Debug Configurations对话框，选择增加配置一个Maven打包项目，在工作目录中选择工程所在根目录，在命令行中输入package，并将配置保存为mvn，如图1-17所示。
+
+![1542613410855](assets/1542613410855.png)
+
+运行mvn打包项目，就可以将实例工程打包，打包的文件将输出在工程的target目录中。
+
+如果已经按照1.1.3节的说明安装了Maven，也可以直接使用Maven的命令打包。打开一个命令行窗口，将路径切换到工程根目录中，直接在命令行输入mvn package，同样也能将项目打包成jar文件。执行结果如下：
+
+```bash
+……
+[INFO] --- maven-jar-plugin:2.5:jar (default-jar) @ spring-boot-hello ---
+[INFO] Building jar: C:\Users\shenh\Documents\GitHub\Spring\SpringBoot\spring-boot-hello\target\spring-boot-hello-1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] --- spring-boot-maven-plugin:1.3.2.RELEASE:repackage (default) @ spring-boot-hello ---
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 11.497 s
+[INFO] Finished at: 2018-11-19T15:41:53+08:00
+[INFO] ------------------------------------------------------------------------
+
+Process finished with exit code 0
+
+```
+
+打包成功后，在工程的target目录中将会生成jar文件spring-boot-hello-1.0-SNAPSHOT.jar。在命令行窗口中切换到target目录中，运行如下指令，就能启动应用。
+
+```bash
+java -jar spring-boot-hello-1.0-SNAPSHOT.jar
+```
+
+如果希望按照传统的做法，将工程发布成war文件，应当将代码清单1-4的Maven配置`<packaging>jar</packageing>`改成`<packaging>war</packaging>`，这样就可以打包成war文件。打包完成后将war文件放置在Tomcat的webapp路径中，启动Tomcat就能自动运行程序。
+
+这里需要注意的是，如果自主使用Tomcat运行应用，在安装JDK时必须配置JAVA_HOME环境变量，同时JDK要求1.8以上的版本，Tomcat必须是8.0以上的版本。
+
+我更加喜欢打包成jar，然后使用Spring Boot的嵌入插件Tomcat运行应用。本书所有实例都可以打包成jar直接运行。即使对于一个包含很多页面、图片、脚本等资源的复杂应用系统，这种方法也是可行的，并且打包成jar，更方便项目发布在Docker上运行，这些将在后面的章节中详细介绍。
+
+## 1.5 关于Spring Boot配置
+
+关于Spring Boot配置，可以在工程的resources文件夹中创建一个application.properties或application.yml文件，这个文件会被发布在classpath中，并且被Spring Boot自动读取。这里推荐使用application.yml文件，因为它提供了结构化及其嵌套的格式，例如，可以按如下所示配置上面的工程，将默认端口改为80，并且将Tomcat的字符集定义为UTF-8。
+
+```yaml
+server:
+  port: 80
+  tomcat:
+    uri-encoding: utf-8
+```
+
+如果要使用application.properties文件，上面的配置就要改成如下所示的样子，其结果完全相同。
+
+```xml
+server.port = 80
+server.tomcat.uri-enconding = UTF-8
+```
+
+使用这个配置文件可以直接使用Spring Boot预定义的一些配置参数，关于其他配置参数的详细说明和描述可以查看官方的文档说明：[https://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html](https://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html)。在后面的开发中将在用得到的地方选择使用这些预定义的配置参数。即使没有预定义的配置参数可用，也能很容易地按照应用的需要自定义一些配置参数，这将在后续的章节中详细介绍。
+
+## 1.6 小结
+
+本章主要介绍了Spring Boot开发环境的搭建，以及一些开发工具的安装配置，内容难免有点枯燥。然后创建并运行一个非常简单的实例工程，让性急的读者一睹Spring Boot的芳容。
+
+本章实例工程只是使用Spring Boot框架进行开发的非常简单的入门指引。因为Spring Boot开发框架是一个非常轻量级的开发框架，所以也有人把它叫做微框架，从入门指引中可以看出，使用Spring Boot框架开发应用不但入门容易，而且其蕴藏的无比强大的功能，使开发过程也变得更加容易。
+
+下面，让我们使用Spring Boot框架进行一些更加有趣的开发吧。这一章只是小试牛刀而已，在后续章节中将使用Spring Boot框架来开始一些真正的开发。
