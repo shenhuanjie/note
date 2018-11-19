@@ -114,8 +114,37 @@ Git Bash
 
 ### 1.2.2 使用Spring Initializr新建项目
 
-新建一个Spring Boot项目，也可以使用Spring Initializr的方式，这种方式很简单，如图1-10所示。注意Initializr Service URL为https://start.spring.io，这将会连接网络，以查询Spring Boot的当前可用版本和组件列表。使用这种方式新建项目大体上也需要三个步骤。
+新建一个Spring Boot项目，也可以使用Spring Initializr的方式，这种方式很简单，如图1-10所示。注意Initializr Service URL为`https://start.spring.io`，这将会连接网络，以查询Spring Boot的当前可用版本和组件列表。使用这种方式新建项目大体上也需要三个步骤。
+
+![1542591244437](assets/1542591244437.png)
 
 **1. 选择类型**
 
-可以使用默认选项，注意Type为Maven Project，Java Version为1.8
+可以使用默认选项，注意Type为Maven Project，Java Version为1.8，Packaging为Jar，如图1-11所示。单击Next进入下一步。
+
+![1542591253922](assets/1542591253922.png)
+
+**2. 选择Spring Boot版本和组件**
+
+选择Spring Boot版本和Spring Boot组件，例如，在Spring Boot Version中选择1.3.5，并勾选Web项目组件，如图1-12所示，然后单击Next进入下一步。
+
+![1542591265662](assets/1542591265662.png)
+
+**3. 输入项目名称**
+
+选择存放路径后输入项目名称，如图1-13所示，这里使用demo作为项目的名称。
+
+![1542591327912](assets/1542591327912.png)
+
+单击Finish，将创建一个初始化项目，如图1-14所示。这个项目不但有完整的目录结构，还有一个完整的Maven配置，并且生成了一个默认的主程序，几乎所有的准备工作都已经就绪，并且可以立即运行（虽然没有提供任何可用的服务）。这也是Spring Boot引以为傲的地方，即创建一个应用可以不用编写任何代码，只管运行即可。
+
+![1542591444831](assets/1542591444831.png)
+
+## 1.3 使用Spring Boot
+
+任何应用的开发都需要对项目的创建、运行和发布等进行管理，使用Spring Boot框架进行开发，可以选择使用Maven或Gradle等项目管理工具。在这里我们使用的是Maven。
+
+### 1.3.1 Maven依赖管理
+
+使用Maven，通过导入Spring Boot的starter模块，可以将许多程序依赖包自动导入工程中。使用Maven的parent   POM，还可以更容易地管理依赖的版本和使用默认的配置，工程中的模块也可以很方便地继承它。例如，使用1.2.1节创建的工程，修改pom.xml文件，使用如代码清单1-1所示的简单Maven配置，基本上就能为一个使用Spring Boot开发框架的Web项目开发提供所需的相关依赖。
+
