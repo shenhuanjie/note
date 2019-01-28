@@ -112,3 +112,113 @@ Scaffolding（脚手架）
 其中最为重要的是docs目录下的CSS样式文件.less目录中的编译文件和js目录中的jQuery插件。bootstrap-master目录下的10个文件可以不用管，它们是一些数据和服务性文件。
 
 ### 2.2.2 编译版Bootstrap文件结构
+
+在2.1.1节中，如果按照第二种方法，下载编译版Bootstrap，则解压bootstrap.zip，可以看到该包中包含的所有文件，如图2-12所示。
+
+![1545706781517](assets/1545706781517.png)
+
+图2-12是Bootstrap的基本结构，编译后的文件可以快速应用于任何Web项目。压缩包中提供了编译版的CSS和JS文件（`bootstrap.*`），也同时提供了编译并压缩之后的CSS和JS文件（`bootstrap.min.*`）。图片文件是使用ImageOptim工具进行压缩的。注意，所有的JavaScript插件都依赖于jQuery库。
+
+* bootstrap.css：完整的Bootstrap样式表，未经压缩过的，可供开发的时候进行调试使用。
+* bootstrap.min.css：经过压缩后的Bootstrap样式表，内容和bootstrap.css完全一样，但是把中间不需要的东西都删掉了，如空格和注释，所以文件大小会比bootstrap.css小，可以在部署网站的时候引用，如果引用了这个文件，就没必要引用bootstrap.css了。
+* bootstrap-responsive.css：在对Bootstrap框架应用了响应式布局之后所需的CSS样式表，如果网站项目不需要进行响应式设计，就不需要引用这个CSS。
+* bootstrap.js：Bootstrap所有JavaScript指令的集合，也是Bootstrap的灵魂，用户看到Bootstrap中所有的JavaScript效果，都是由这个文件控制的。这个文件也是一个未经压缩的版本，供开发的时候进行调试使用。
+* bootstarap.min.js：bootstrap.js的压缩版，内容和bootstrap.js一样，但是文件会小很多，在部署网站的时候就可以不引用bootstrap.js，转而引用这个文件。
+
+## 2.3 Bootstrap应用解析
+
+把Bootstrap压缩包下载到本地之后，就可以安装使用了。本节不仅介绍如何正确安装Bootstrap工具集，同时介绍Bootstrap架构组成，这个架构有什么功能，能够为网页设计和开发带来哪些用处。最后，引导读者创建一个符合Bootstrap技术要求的标准模板，这样读者就可以利用这个模板页面上机练习了。
+
+### 2.3.1 安装Bootstrap
+
+Bootstrap安装大致需要以下两步。
+
+第1步：安装Bootstrap的基本样式。样式的安装有多种方法，下面代码使用`<link>`标签调用CSS样式，这是一种常用的调用样式方法。
+
+```html
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8" />
+		<title>test</title>
+		<link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.css" />
+		<link rel="stylesheet" type="text/css" href="bootstrap/css/self.css" />
+	</head>
+
+	<body>
+
+	</body>
+
+</html>
+```
+
+其中bootstrap.css是Bootstrap的基本样式，bootstrap-responsive.css是响应式布局样式，self.css是本文档自定义样式。
+
+> **注意：** 这里有两个关键点，其中bootstrap.css是Bootstrap框架集中的基本样式文件，只要应用Bootstrap，就必须调用这个文件。而bootstrap-responsive.css则可以根据需要选择性安置，如果想让项目具有响应式布局的效果，就必须调用这个样式文件。调用必须遵循向后顺序，bootstrap-responsive.css必须置于bootstrap.css之后，否则就不具有响应式布局功能。最后，self.css是项目中的自定义样式，用来覆盖Bootstrap中的一些默认设置，便于开发者定制本地样式。
+
+第2步：CSS样式安装完后，就可以进入JavaScript调用操作。方法很简单，仅需把需要的jQuery插件源代码文件按照与上一步相似的方式加入到页面代码中。
+
+调用Bootstrap的jQuery插件，代码如下。
+
+```html
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8" />
+		<title>test</title>
+		<link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.css" />
+		<link rel="stylesheet" type="text/css" href="bootstrap/css/self.css" />
+	</head>
+
+	<body>
+		<!--文档内容-->
+		<script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+		<script src="bootstrap/js/bootstrap.js" type="text/javascript" charset="utf-8"></script>
+	</body>
+
+</html>
+```
+
+其中jquery.js是jQuery库基础文件，bootstrap.js是Bootstrap的jQuery插件源文件。建议将JavaScript脚本文件置于文档尾部，即相邻`</body>`标签的前面，不要置于`<head>`标签内。
+
+### 2.3.2 Bootstrap架构解析
+
+Bootstrap中的HTML、CSS和JavaScript适用于各类设备，如移动设备、平板电脑、PC等，不过它们的功能可以概括成如下几个类别。
+
+* 脚手架：全局性的样式文件，用于重置背景、链接样式、栅格系统，并包含两个简单的布局结构。
+* 基本CSS样式：常用HTML元素样式，如排版、代码、表格、表单、按钮样式，还包括一个非常棒的图标集——Glyhicons。
+* Bootstrap组件：常与界面组件，如标签、导致、警告、页面标题的基本样式。
+* JavaScript插件：与Bootstrap组件类似，这些JavaScript插件用来实现工具提示（Tooltip）、弹出提示（Popover）、模态对话框（Modal）等具有交互性的组件。
+
+Bootstrap组件库和JavaScript插件集共同提供了一下网页应用元素：按钮组、按钮下拉菜单、用于导航的标签、列表、导航条、标签、图标、页眉和单位、缩略图、警告对话框、进度条、模态对话框、下拉项、工具提示、弹出提示、折叠、轮播、输入提示。
+
+后面的章节将会详细介绍这些组件的细节。
+
+### 2.3.3 设计Bootstrap网页模板
+
+为了把读者的注意力完全放在使用Bootstrap上，本节先做一下准备工作。
+
+```html
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8" />
+		<title>test</title>
+		<link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.css" />
+		<link rel="stylesheet" type="text/css" href="bootstrap/css/self.css" />
+	</head>
+
+	<body>
+		<h1 class="btn btn-success btn-large"><i class="icon-user icon-white"></i>Hello, world!</h1>
+		<!--文档内容-->
+		<script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+		<script src="bootstrap/js/bootstrap.js" type="text/javascript" charset="utf-8"></script>
+	</body>
+
+</html>
+```
+
+在

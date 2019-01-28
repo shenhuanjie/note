@@ -1,0 +1,14 @@
+<MKM version="2.0" imageFileUrl="file:///C:/Users/shenh/Documents/GitHub/note/%e7%a8%8b%e5%ba%8f%e4%ba%ba%e7%94%9f/assets/1545298251428.png">
+  <Marks>
+    <ColorMark defaultDirection="9" colorSystem="hex" direction="9" color="16711680" targetColor="11118760" offsetX="25" offsetY="10" x="110" y="491"/>
+    <ColorMark defaultDirection="9" colorSystem="hex" direction="9" color="16711680" targetColor="15658734" offsetX="25" offsetY="10" x="208" y="519"/>
+    <ColorMark defaultDirection="9" colorSystem="hex" direction="9" color="16711680" targetColor="15658734" offsetX="25" offsetY="10" x="190" y="500"/>
+    <ColorMark defaultDirection="9" colorSystem="hex" direction="9" color="16711680" targetColor="4141875" offsetX="25" offsetY="10" x="74" y="465"/>
+    <ColorMark defaultDirection="9" colorSystem="hex" direction="9" color="16711680" targetColor="15658734" offsetX="25" offsetY="10" x="222" y="274"/>
+    <ColorMark defaultDirection="9" colorSystem="hex" direction="9" color="16711680" targetColor="15658734" offsetX="25" offsetY="10" x="168" y="205"/>
+    <ColorMark defaultDirection="9" colorSystem="hex" direction="9" color="16711680" targetColor="15658734" offsetX="25" offsetY="10" x="243" y="152"/>
+    <LengthMark direction="12" color="16711680" length="445" x="29" y="47"/>
+    <RectMark color="16711680" x="96" y="113" offsetX="471" offsetY="663"/>
+    <RectMark color="16711680" x="317" y="452" offsetX="0" offsetY="0"/>
+  </Marks>
+</MKM>
