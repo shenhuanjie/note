@@ -279,3 +279,30 @@ webpack-dev-server --hot
 ### 2.1.7 小结
 
 除了上面介绍过的，业界还有一些其他的打包方案，如rollup、jspm提供的bundle工具等，不过它们或者还不够成熟，或者缺乏特点，所以没有在这里介绍。本节主要选取了3个相对成熟、主流的模块打包工具进行了比较，webpack在功能、使用等方面均有一定的优势，且提供了一些很有用的特色功能，说它是目前最好的前端模块打包工具并不为过，这也真是越来越多的前端项目选择使用webpack的原因。此外，考虑到React官方也推荐使用webpack，本书中介绍的React开发项目将全部使用webpack进行构建。
+
+## 2.2 基于webpack进行开发
+
+### 2.2.1 安装
+
+webpack是使用Node.js开发的工具，可以通过npm进行安装。npm是Node.js的包管理工具，在这里我们首先需要确保Node.js的运行环境及已安装了npm（安装过程可参考Node.js官网），然后通过npm进行webpack的安装。
+
+```bash
+npm install webpack -g
+```
+
+这个命令会默认安装webpack最新的稳定版本。本书示例中所使用的为webpack@1.12.14。读者也可以在安装时指定版本为1.12.14，以确保与本书保持一致的运行结果，如下。
+
+```bash
+npm install webpack@1.12.14 -g
+```
+
+大部分情况下需要以命令行工具的形式使用webpack，所以我们这里将它安装在全局（-g），方便使用。有时候会希望编写自己的构建脚本，或是由项目指定需要依赖的webpack，在这种情况下将webpack安装到本地会更合适。对前端项目来说，webpack扮演的是构建工具的角色，并不是代码依赖，应该被安装在dev-dependencies中，即：
+
+```bash
+npm install webpack --save-dev
+```
+
+在这里，采用第一种方式即可。
+
+本章最终完成的示例代码都在https://github.com/vikingmute/webpack-react-codes/tree/master/chapter2，读者阅读时可以进行参考。
+
