@@ -2,7 +2,9 @@
 
 如今，前端项目日益复杂，构建系统已经成为开发过程中不可或缺的一个部分，而模块打包（module bundler）正是前端构建系统的核心。
 
-正如前面介绍到，前端的模块系统经理了长久的演变，对应的模块打包方案也几经变迁。从最初简单的文件合并，到AMD的模块具名化并合并，再到browserify将CommonJS模块转换成为浏览器端可运行的代码，打包器做的事情越来越复杂，角色也越来越重要。
+正如前面介绍到，前端的模块系统经理了长久的演变，对应的
+
+模块打包方案也几经变迁。从最初简单的文件合并，到AMD的模块具名化并合并，再到browserify将CommonJS模块转换成为浏览器端可运行的代码，打包器做的事情越来越复杂，角色也越来越重要。
 
 在这样一个竞争激烈的细分领域中，webpack以极快的速度风靡全球，成为当下最流行的打包解决方案，并不是偶然。它功能强大、配置灵活，特有的code spliting方案正戳中了大规模复杂Web应用的痛点，简单的loader/plugin开发使它很快拥有了丰富的配套工具与生态。
 
@@ -306,3 +308,417 @@ npm install webpack --save-dev
 
 本章最终完成的示例代码都在https://github.com/vikingmute/webpack-react-codes/tree/master/chapter2，读者阅读时可以进行参考。
 
+### 2.2.2 Hello world
+
+在这个示例中，将使用webpack构建一个简单的Hello world应用。应用包括两个JavaScript模块（完整代码见chapter2/part1/）。
+
+1. 生成文本“Hello world！”的hello模块（hello.js)。
+
+```js
+module.exports = 'Hello world!';
+```
+
+2. 打印文本的index模块（index.js）。
+
+```js
+import hello from './hello';
+console.log(hello);
+```
+
+页面内容（index.html）很简单。
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>hello</title>
+</head>
+
+<body>
+    <script src="./main.js"></script>
+</body>
+
+</html>
+```
+
+需要注意的是，index.html中引入的bundle.js并不存在，它就是我们使用webpack将会生成的结果文件。
+
+现在我们的目录结构是如下这样的。
+
+```bash
+- index.html
+- index.js
+- hello.js
+```
+
+我们知道，如果在index.html中直接引用index.js，代码是无法正常执行的，因为上面的代码是按照CommonJS的模块规范书写的，浏览器环境并不支持。那么基于webpack的做法是什么呢？其实很简单，一行命令就够了。
+
+```bash
+webpack ./index.js bundle.js
+```
+
+这个命令会告诉webpack将index.js作为项目的入口文件进行构建，并将结果输出为bundle.js。然后就可以看到在当前目录下新增了一个文件bundle.js，现在在浏览器中打开index.html，bundle.js会被加载进来并执行，控制台打印出“Hello world！”。
+
+下面通过查看bundle.js的内容来分析一下webpack所施展的魔法到底是怎么一回事。
+
+```js
+/******/ (function(modules) { // webpackBootstrap
+/******/ 	// The module cache
+/******/ 	var installedModules = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/
+/******/ 		// Check if module is in cache
+/******/ 		if(installedModules[moduleId]) {
+/******/ 			return installedModules[moduleId].exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Flag the module as loaded
+/******/ 		module.l = true;
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/******/
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = modules;
+/******/
+/******/ 	// expose the module cache
+/******/ 	__webpack_require__.c = installedModules;
+/******/
+/******/ 	// define getter function for harmony exports
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// define __esModule on exports
+/******/ 	__webpack_require__.r = function(exports) {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 		}
+/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 	};
+/******/
+/******/ 	// create a fake namespace object
+/******/ 	// mode & 1: value is a module id, require it
+/******/ 	// mode & 2: merge all properties of value into the ns
+/******/ 	// mode & 4: return value when already ns object
+/******/ 	// mode & 8|1: behave like require
+/******/ 	__webpack_require__.t = function(value, mode) {
+/******/ 		if(mode & 1) value = __webpack_require__(value);
+/******/ 		if(mode & 8) return value;
+/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
+/******/ 		var ns = Object.create(null);
+/******/ 		__webpack_require__.r(ns);
+/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
+/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
+/******/ 		return ns;
+/******/ 	};
+/******/
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+/******/
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_require__.p = "";
+/******/
+/******/
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/index.js");
+/******/ })
+/************************************************************************/
+/******/ ({
+
+/***/ "./src/hello.js":
+/*!**********************!*\
+  !*** ./src/hello.js ***!
+  \**********************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony default export */ __webpack_exports__[\"default\"] = ('Hello world!');\n\n//# sourceURL=webpack:///./src/hello.js?");
+
+/***/ }),
+
+/***/ "./src/index.js":
+/*!**********************!*\
+  !*** ./src/index.js ***!
+  \**********************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _hello__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./hello */ \"./src/hello.js\");\n\r\nconsole.log(_hello__WEBPACK_IMPORTED_MODULE_0__[\"default\"]);\n\n//# sourceURL=webpack:///./src/index.js?");
+
+/***/ })
+
+/******/ });
+```
+
+整段代码的结构是一个立即执行函数表达式（IIFE），这是JavaScript中常见的独立作用域的方法。上段代码的匿名函数的定义旁有个注释webpackBootstrap，这里我们就将这个函数称为webpackBootstrap。
+
+暂且不管webpackBootstrap的内部做了什么，先来看一下它的参数，webpackBootstrap接收一个参数modules，在函数最下面的注释中，我们看到实参是一个数组，数组的每一项都是一个匿名函数，分别定义在最后两个特定注释的地方。不难发现，这两个匿名函数的内容分别对应了刚才定义的两个模块index及hello。
+
+值得注意的是，在构建命令中只指定了index模块所对应的JavaScript文件，webpack通过静态分析语法树，递归地检测到了所有依赖模块，以及依赖的依赖，并合并到最终的代码中。
+
+这里的匿名函数称为工厂方法（factory），即运行就可以得到模块的方法，就像一个生产特定模块的工厂一样。如果你了解过AMD模块或Node.js中CommonJS模块运行的机制，你应该不会对这种将代码包装成工厂方法的做法感到陌生。模块代码被包装成函数之后，其运行时机变得可控，而且也拥有了独立的作用域，定义变量、声明函数都不会污染全局作用域。不过如果你细心的话，就不难发现工厂方法的内部代码与实现的模块源代码还是有区别的。require(“./hello”)这个表达式被替换成了`__webpack_require_(1)`，对应地，工厂方法的参数列表中除了CommonJS规范所要求的module与exports外还包含了`__webpack_require__`，即用来替换require的方法。`__webpack_require__`提供的功能与require是一致的：声明对其他模块的依赖并获得该模块的exports。不同之处在于`__webpack_require__`不需要提供模块的相对路径或其他形式的ID，直接传入该模块在modules列表中的索引值即可。
+
+那么这个替换有什么好处呢？首先，我们知道，CommonJS中的require方法接收一个模块标识符（module identifier）作为参数，而模块标识符有以下两种形式。
+
+* .或..开头的相对ID（Relative ID），如./hello。
+* 非.或..开头的顶级ID（Top-Level ID），如hello。
+
+而不管是哪种形式，文件的“.js”后缀名都是可选省略的。也就是说，在指定了根目录（如这里指定index.js与hello.js所在的目录）的情况下，index模块依赖hello模块有以下4种写法。
+
+* require(‘./hello’)
+* require(‘./hello.js’)
+* require(‘hello’)
+* require(‘hello.js’)
+
+然而，这4种写法所指向的hello模块是同一个，从模块标识符到真实模块映射关系的实现被称为模块标识符的解析（resolve）过程。而 使用`__webpack_require__`的好处在于，其接收的参数（数组modules中的索引值）与真实模块的实现是意义对应的，也就省掉了模块标识符的解析过程（准确地说，是把解析过程提前到了构建期），从而可以获得更好的运行性能。
+
+然后，来看一下让我们的代码真正拥有了在浏览器环境中执行能力的函数webpackBootstrap。这里的Bootstrap跟UI框架Bootstrap没什么关系，计算机领域中常用来表达引导程序的意思，如操作系统的启动过程。同样地，webpackBootstrap函数是整个应用的启动程序。
+
+首先，它通过参数modules获取到所有模块的工厂方法，接着在此基础上构造了`__webpack_require__`。方法`__webpack_require__`就是刚才提到的会传递给模块的工厂方法，用于加载指定模块的方法。加载模块的过程很简单，从modules数组中获得指定索引值所对应的项（即指定模块的工厂方法），构造一个空的module，作为参数调用工厂方法。工厂方法的执行结果会体现在module.exports上，返回该内容即可。这边通过installedModules缓存了模块工厂方法的执行结果，确保了每个模块的实现代码只会执行一次，后续的调用会直接返回已缓存的结果。
+
+构造完`__webpack_require__`之后，在之后直接使用这个方法执行了入口模块（webpack构建时，会将入口模块放在数组modules的第1项）。至此，应用的引导启动便完成了。入口模块内部会继续通过传入的`__webpack_require__`方法执行其依赖的模块，整个应用便运行了起来。
+
+总结一下的话，webpack主要做了两部分工作，如下。
+
+* 分析得到所有必需模块并合并。
+* 提供了让这些模块有序、正常执行的环境。
+
+### 2.2.3 使用loader
+
+通过最简单的Hello world应用，我们大概了解了webpack基本的使用于工作原理。在这一点上，各模块打包工具基本都是一致的，下面将进一步了解webpack的一些特别而强大的功能。首先要介绍的就是loader。下面将借助webpack的官方文档的来定义一下loader。
+
+```txt
+Loaders are transformations that are applied on a resource file of your app. They are functions (funning in node.js) that take the source of a resource file as the parameter and return the new source.
+```
+
+翻译一下，“loader是作用于应用中资源文件的转换行为。它们是函数（运行在Node.js环境中），接收资源文件的源代码作为参数，并返回性的代码。“举个例子，你可以通过jsx-loader将React的JSX代码转换为JS代码，从而可以被浏览器执行。
+
+在本节中，将以前端开发的另一个主要开发内容CSS为例，介绍一下loader的功能与使用（完整代码将chapter2/part2）。在webpack中，每个loader往往表现为一个命名为xxx-loader的npm包，针对特定的资源类型（xxx）进行转换。而为了将CSS资源添加到项目中，下面要介绍两个loader：style-loader与css-loader。前者将CSS代码以`<style>`标签的形式插入到页面上从而生效；后者通过检查CSS代码中的import语句找到依赖并合并。大部分情况下，我们将二者搭配使用。首先要安装这两个loader对应的npm包（你需要先在该目录下添加package.json文件或通过npm init自动生成。
+
+```bash
+npm install style-loader css-loader --save-dev
+```
+
+接着创建一个简单的CSS文件index.css。
+
+```css
+div {
+    width: 100px;
+    height: 100px;
+    background-color: red;
+}
+```
+
+我们在入口文件index.js中通过require方法引入index.css。
+
+```js
+import hello from './hello';
+import 'style-loader!css-loader!./index.css';
+console.log(hello);
+document.body.appendChild(document.createElement('div'));
+```
+
+注意这里的`style-loader!css-loader!`，类似xxx-loader!这样的写法是为了指定特定的loader。这里是告诉webpack使用style-loader及css-loader这两个loader对index.css的内容进行处理。然后在页面上创建一个div元素，以验证在index.css中编写的样式是否生效。
+
+然后同样执行以下命令。
+
+```bash
+webpack ./index.js bundle.js
+```
+
+得到结果文件后，在页面中引入bundle.js，在浏览器中打开页面即可看到效果。
+
+与常规的前端开发不同的是，我们的页面上最终并没有插入`<link>`标签，结果文件中也没有CSS文件，却通过引入一个JS文件实现了样式的引入。这正是webpack的特点之一，任何类型的模块（资源文件），理论上都可以通过被转换为JavaScript代码实现与其他模块的合并与加载。webpack官网的站长图（如图2-1所示）也很好地体现了这一点。
+
+![1550656114476](assets/1550656114476.png)
+
+正如前面所述，这里通过JavaScript加载CSS是借助了style-loader的能力（将CSS代码以`<style>`标签的形式插入到页面，标签内容通过JavaScript生成）。与传统页面直接插入标签相比，该方法也存在着不可忽视的缺陷：样式内容的生效时间被延后。
+
+如果遵循常见的前端页面性能优化建议，一般会把`<link>`插入在页面的`<head>`中，而把`<script>`放在`<body>`的最后，这样在文档被解析到`<head>`的时候，样式文件就会被下载并解析，JavaScript内容则会被延后到整个文档几乎被解析完成时才被加载与执行。在现在的做法中，样式内容其实是与JavaScript内容一起加载的，它的插入与解析甚至会被延后到JavaScript内容的执行期。相比前者，生效时间不可避免地会晚很多，因而如果页面上本来就有内容，这部分内容会有一个短暂的无样式的瞬间，用户体验很不好。
+
+当然，这个缺陷是可以避免的。借助extract-text-webpack-plugin这个插件，webpack可以在打包时将样式内容抽取并输出到额外的CSS文件中，然后在页面中直接引入结果CSS文件即可。插件（plugin）在webpack的使用中是另一个很重要的概念，我们将在后面的详细介绍webpack的插件及其使用。
+
+### 2.2.4 配置文件
+
+2.2.3节介绍了使用webpack及其loader进行前端代码构建的方法，然而它还不够简单。
+
+* 每次构建都需要指定项目的入口文件（./index.js）与构建输出文件（bundle.js）。
+* 使用loader需要以xxx!的形式指定，意味着每个有require CSS资源的地方，都需要写成如下形式。
+
+`require('style!css!./index.css')`
+
+作为天生厌倦重复劳动的程序员，我们有没有办法把这些事做得更优雅一点呢？答案就是本节的内容。
+
+本节将介绍如何通过配置文件的形式对webpack的构建行为进行配置（完整代码见chapter2/part3/），这也是webpack与RequireJS、browserify等相比一个很便利的特性。
+
+webpack支持Node.js模块格式的配置文件，默认会使用当前目录下的webpack.config.js，配置文件只需export的一个配置信息对象即可，形式如下。
+
+```js
+module.exports={
+    // configuration
+};
+```
+
+首先将以2.2.3节内容为例，介绍一些配置文件的编写及使用。一个最简单的配置信息对象包含以下信息。
+
+* entry项目的入口文件。
+* output构建的输出结果描述。本身是一个对象，包括很多字段，比较重要的如下。
+  * path：输出目录。
+  * filename：输出文件名。
+  * publicPath：输出目录所对应的外部路径（从浏览器中访问）。
+
+其中publicPath是一个很容易被忽略但是很重要的配置，它表示构建结果最终被真正访问时的路径。一个常见的前端构建上线过程是这样的：配置构建输出目录为dist，构建完成后对dist目录进行打包，然后将其内容（结果文件往往不止一个）发布到CDN上。比如其中的dist/bundle.js，假设它最终发布的线上地址为http://cdn.example.com/static/bundle.js，则这里的publicPath应当取输出目录（dist/）所对应的线上路径，即http://cdn.example.com/static/。在我们的演示项目中，直接通过相对路径访问静态资源，不涉及打包上线CDN的过程，故不做配置。
+
+所以对于先前的例子，我们的配置文件是以下这样的（webpack.config.js）。
+
+```js
+var path = require('path');
+module.exports = {
+    entry: path.join(__dirname, 'index'),
+    output: {
+        path: __dirname,
+        filename: 'bundle.js'
+    },
+    module: {
+        loader: [{
+            test: /\.css$/,
+            loaders: ['style', 'css']
+        }]
+    }
+};
+```
+
+其中module字段是上面没有介绍到的，module.loaders是对于模块中的loader使用的配置，值为一个数组。数组的每一项指定一个规则，规则的test字段是正则表达式，若被依赖模块的ID符合该正则表达式，则对依赖模块依次使用规则中loaders字段所指定的loader进行转换。在这里，我们配置了对所有符合/\.css$/，即后缀名为.css的资源使用style-loader与css-loader，这样的话在JavaScript代码中require CSS模块的时候就不用每次都写一遍style!css!了，只需要像依赖JavaScript模块一样写成：
+
+```js
+require('./index.css');
+```
+
+这样每次构建的时候也不需要手动指定入口文件与输出文件了，直接在项目目录下执行：
+
+```bash
+webpack
+```
+
+webpack会默认从webpack.config.js中获取配置信息，并执行构建过程，是不是方便很多呢？
+
+### 2.2.5 使用plugin
+
+除了loader外，plugin（插件）是另一个扩展webpack能力的方式。与loader专注于处理资源内容的转换不同。plugin的功能范围更广，也往往更为灵活强大。plugin的存在可以看成是为了实现这些loader实现不了或不适合在loader中实现的功能，如自动生成项目的HTML页面（HtmlWebpackPlugin）、向构建过程中注入环境变量（EnvironmentPlugin）、向块（chunk）的结果文件中添加注释信息（BannerPlugin）等。
+
+**1. HtmlWebpackPlugin**
+
+webpack内置了一些常用的plugin，如上面提到的EnvironmentPlugin及BannerPlugin，更多第三方的plugin可以通过安装npm包的形式引入，如HtmlWebpackPlugin对应的npm包是html-webpack-plugin。这里就以HtmlWebpackPlugin为例介绍一下webpack plugin的使用。
+
+在前面Hello world的示例中，我们看到，因为逻辑均实现在JavaScript中，页面（index.html）的实现中基本没有逻辑，除了提供一个几乎为空的HTML结构外，引入了将要被构建生成的结果文件bundle.js。一方面，bundle.js是在webpack.config.js中配置的output.filename的值，在这里直接取固定值不方便后续维护；另一方面，为了充分利用浏览器缓存，提高页面的加载速度，在生产环境中常常向静态文件的文件名添加MD5戳，即使用bundle_[hash].js而不是bundle.js，这里的[hash]会在构建时被该chunk内容的MD5结果替换，以实现内容不变则文件名不变，内容改变导致文件名改变。在这样的情况下，在HTML页面中给定结果文件的路径就变得不太现实。而HtmlWebpackPlugin正是为了解决这一问题而生，它会自动生成一个几乎为空的HTML页面，并向其中注入构建的结果文件路径，即使路径中包含动态的内容，如MD5戳，也能够完美处理。
+
+了解了HtmlWebpackPlugin的能力，下面来将它引入到先前的项目中（完整代码见chapter2/part4/）。
+
+**2. 安装plugin**
+
+前面介绍到，webpack会内置一部分plugin，想要使用这些plugin，不需要额外安装，直接使用即可。
+
+```js
+var webpack = require('webpack');
+webpack.BannerPlugin; // 这样就可以直接获取BannerPlugin
+```
+
+但是，这里介绍的HtmlWebpackPlugin并不是内置plugin，它在npm包html-webpack-plugin中实现，因此，首先需要安装这个报（这里使用的是1.7.0版本，注意对不同版本的包html-webpack-plugin，其用法与配置格式可能会不一致）。
+
+```bash
+npm i html-webpack-plugin@1.7.0 --save-dev
+```
+
+安装完成后，在webpack.config.js中就可以获取这个插件了。
+
+```js
+var HtmlWebpackPlugin = require('html-webpack-plugin');
+```
+
+**3. 配置plugin**
+
+接下来是让webpack使用HtmlWebpackPlugin，并对其行为进行配置。plugin相关配置对应webpack配置信息中的plugins字段，它的值要求是一个数组，数组的每一项为一个plugin实例。
+
+```js
+var path = require('path');
+var HtmlWebpackPlugin = require('html-webpack-plugin');
+module.exports = {
+    entry: path.join(__dirname, 'index'),
+    output: {
+        path: __dirname,
+        filename: 'bundle.js'
+    },
+    module: {
+        loader: [{
+            test: /\.css$/,
+            loaders: ['style', 'css']
+        }]
+    },
+    plugins: [
+        new HtmlWebpackPlugin({
+            title: 'use plugin'
+        })
+    ]
+};
+```
+
+我们看到，我们构建了一个HtmlWebpackPlugin实例，并将其添加进了配置信息的plugins字段。在实例化时，传入了{title:‘use plugin’}，这是传递给HtmlWebpackPlugin的配置信息，它告诉HtmlWebpackPlugin给生成的HTML页面设置`<title>`的内容为use plugin。这样，原来的index.html就可以删除了。在构建完成后，这个插件会自动在output目录（在这里即当前目录）下生成文件index.html。
+
+再次执行构建命令webpack，便可以看到效果。
+
+### 2.2.6 实时构建
+
+与RequireJS的小文件开发方式相比，基于browserify与webpack的开发方式多出了构建的步骤。如果每一次小的改动都要手动执行一遍构建才能看到效果，开发会变得非常烦琐。监听文件改动并实时构建的能力成为新一代打包工具的标配。在webpack中，通过添加--watch选项即可开启监视功能，webpack会首先进行一次构建，然后依据构建得到的依赖关系，对项目所依赖的所有文件进行监听，一旦发生改动则触发重新构建。命令也可以简写成如下形式。
+
+```bash
+webpack -w
+```
+
+除了watch格式外，webpack提供了webpack-dev-server来辅助开发与调试。webpack-dev-server是一个基于Express框架的Node.js服务器。它还提供了一个客户端的运行环境，会被注入到页面代码中执行，并通过Socket.IO与服务器通信。这样，服务器端的每次改动与重新构建都会被通知到页面上，页面可以随之做出反应。除了最基本的自动刷新，还提供有如模块热替换（Hot Module Replacement）这样强大的功能。
+
+使用webpack-dev-server需要额外安装webpack-dev-server包。
+
+```bash
+npm install webpack-dev-server -g
+```
+
+然后启动webpack-dev-server即可。
+
+```bash
+webpack-dev-server
+```
+
+webpack-dev-server默认会监听8080端口，因此直接在浏览器里打开http://localhost:8080，即可看到结果页面。
+
+对于webpack-dev-server的配置，既可以通过命令行参数的形式传递，也可以通过在webpack.config.js的export中添加指定devServer实现。详细的使用可以参考webpack的官方文档，这里就不做赘述了。
