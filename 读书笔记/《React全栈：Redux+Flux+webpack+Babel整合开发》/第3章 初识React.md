@@ -146,4 +146,118 @@ function activate(index) {
 
 ### 3.1.3 使用React
 
-如果使用React把这个例子重新实现一遍的话，它可能是如下这样的（为了清晰简单，这里把list也放在组件的state中，在实际
+如果使用React把这个例子重新实现一遍的话，它可能是如下这样的（为了清晰简单，这里把list也放在组件的state中，在实际的实现中，通过props将list传入组件会更合适）。
+
+```jsx
+class List extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            list: [1, 2, 3],
+            activeIndex: -1
+        };
+    }
+    activate(index) {
+        this.setState({
+            activeIndex: index
+        });
+    }
+    render() {
+        const { list, activeIndex } = this.state;
+        const lis = list.map(
+            (item, index) => {
+                const cls = index === activeIndex ? 'active' : '';
+                return (
+                    <li
+                        key={index}
+                        className={cls}
+                        onClick={() => this.activate(index)} >
+                    </li >
+                )
+            }
+        )
+        return (
+            <ul> {lis}</ul >
+        );
+    }
+}
+```
+
+不难看出，除了React特有的Component接口、字段及JSX语法等，在基于React Component的实现中，整体逻辑组成与第二个例子是类似的：首次选了通过render得到界面，每个li的点击出发activate方法，activate方法调用setState更新状态信息，setState会出发重新render（React提供了这一机制），从而使界面得到更新。
+
+那么刚才的两个缺点是怎么解决的呢？
+
+在具体分析之前，首先要说明一点：JSX内容的渲染结果其实不是真实的DOM节点，本质上是JavaScript对象的虚拟DOM节点，它记录了这个节点的所有信息，可以依据一定的规则生成对应的真实DOM节点。
+
+**1. 性能问题**
+
+我们知道前端的性能瓶颈大多数时候都在于操作DOM，所以如果避开操作DOM，只是重新生成虚拟的DOM节点（JavaScript对象），本身是很快的。在将虚拟的DOM对应生成真实DOM节点之前，React会将虚拟的DOM树与先前的进行比较（Diff），计算出变化的部分，再将变化的部分作用到真实DOM上，实现最终界面的更新。得益于Diff算法的高效，整个过程的代价大致接近于最终操作真实DOM的代价，即与最初的实例很接近了。二者的区别在于，React以额外的计算量换取了对于更新点的自动定位，以框架本身复杂的代码实现换取了业务代码逻辑的清晰简单。
+
+**2. DOM事件与引用失效**
+
+在React的哲学里，直接操作DOM是典型的反模式。React对DOM事件进行了封装并提供了相应的接口。值得注意的是，React提供的事件绑定接口与其界面声明方式是一脉相承的，事件绑定表现为，值为回调函数的组件属性（props）。这样的好处是，绑定事件的过程自然地变成了界面渲染（render）的一部分，无须特别处理。
+
+在事件绑定与读/写操作都被React通过抽象层屏蔽后，业务代码基本无须接触真实DOM，需要持有引用的场景自然也不复存在，引用失效也就无从说起。
+
+### 3.1.4 小结
+
+最后总结一下，React的出现允许我们以简单粗暴的方式构建我们的界面：仅仅声明数据到视图的转换逻辑，然后维护数据的变动，自动更新视图。它看起来很像每次状态更新时，都需要整体地更新一次视图，但React的抽象层避免了这一做法带来的弊端，让这一开发方式变得可行。
+
+## 3.2 JSX
+
+### 3.2.1 来历
+
+下面这一段是官方文档中的引用，它可以解释JSX这种写法诞生的初衷。
+
+We strongly believe that components are the right way to sparate concerns rather than “templates” and “display logic.” We think that markup and the code that generates it are intimately tied together. Additionally, display logic is often very complex and using template languages to express it becomes cumbersome.
+
+多年依赖，在传统的开发中，把模板和功能分离看作是最佳实践的完美例子，翻阅形形色色的框架文档，总有一个模板文件夹里面放置了对应的模板文件，然后通过模板引擎处理这些字符串，来生成把数据和模板结合起来的字符。而React认为世界是基于组件的，组件自然而然和模板相连，把逻辑和模板分开放置是一种笨重的思路。所以，React创造了一种名为JSX的语法格式来架起他们之间的桥梁。
+
+### 3.2.2 语法
+
+**1. JSX不是必需的**
+
+JSX编译器把类似HTML的写法转换成原生的JavaScript方法，并且会将传入的属性转化为对应的对象。它就类似于一种语法糖，把标签类型的写法转换成React提供的一个用来创建ReactElement的方法。
+
+```jsx
+const MyComponent;
+//input JSX,在JS中直接写类似HTML的内容，前所未有的感觉。其实它返回的是一个
+//ReactElement
+let app = <h1 title="my title">this is my title</h1>;
+//JSX转换后的结果
+let app = React.createElement('h1',{title:'my title'},'this is my title');
+```
+
+**2. HTML标签与React组件**
+
+React可以直接渲染HTML类型的标签，也可以渲染React的组件。
+
+React组件会在下面几章详细介绍，这里读者可以把它看作一个特殊对象。
+
+HTML类型的标签第一个字母用小写来表示。
+
+```jsx
+import React from 'react';
+// 当一个标签里面为空的时候，可以直接使用自闭和标签
+// 注意class是一个JavaScript保留字，所以如果要写class应该替换成className
+let divElement = <div className="foo" />
+// 等同于
+let divElement = React.createElement('div', { className: 'foo' });
+```
+
+React组件标签第一个字母用大写来表示。
+
+```jsx
+import React from 'react';
+class Headline extends React.component {
+
+    render() {
+        // 直接return JSX语法
+        return <h1>Hello React</h1>
+    }
+}
+let headline = <Headline />
+// 等同于
+let headline = React.createElement(Headline);
+```
+
