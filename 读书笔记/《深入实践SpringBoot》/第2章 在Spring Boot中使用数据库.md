@@ -1051,7 +1051,7 @@ public class TestDataSourceConfig extends AbstractMongoConfiguration {
 
 ```
 
-## 2.4 MongoDB测试
+### 2.3.4 MongoDB测试
 
 如果还没有安装MongoDB服务器，可以参照附录B的方法安装并启动一个MongoDB服务器。然后，使用如代码清单2-18所示的配置方法配置连接服务器的一些参数，该配置假定你的MongoDB服务器安装在本地，并使用默认的数据库端口：27017。
 
@@ -1136,6 +1136,410 @@ c.s.boot.mongodb.test.RepositoryTest - ===user=== userid:1, username:name, pass:
 
 { "_id" : "1", "_class" : "com.spring.boot.mongodb.model.UserEntity", "username" : "user", "password" : "12345678", "name" : "name", "email" : "email@com.cn", "registrationDate" : ISODate("2019-05-10T09:35:59.649Z"), "roles" : [ "manage" ] }}
 ```
+
+## 2.4 使用Neo4j
+
+有没有既具有传统关系型数据库的优点，又具备NoSQL数据库优势的一种数据库呢？Neo4j就是一种这样的数据库。Neo4j是一个高性能的NoSQL图数据库，并且具备完全事务特性。Neo4j将结构化数据存储在一张图上，图中每一个结点的属性表示数据的内容，每一条有向边表示数据的关系。Neo4j没有表结构的概念，它的数据用节点的属性来表示。
+
+### 2.4.1 Neo4j依赖配置
+
+在Spring Boot中使用Neo4j非常容易，因为有spring-data-neo4j提供了强大的支持。首先，在工程的Maven管理中引入Neo4j的相关依赖，如代码清单2-20所示。
+
+``` xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>spring-boot-db</artifactId>
+        <groupId>com.spring.boot.db</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>neo4j</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-rest</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-neo4j</artifactId>
+            <!--<version>4.0.0.RELEASE</version>-->
+        </dependency>
+        <dependency>
+            <groupId>com.voodoodyne.jackson.jsog</groupId>
+            <artifactId>jackson-jsog</artifactId>
+            <version>1.1</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+```
+
+### 2.4.2 结点和关系实体建模
+
+虽然Neo4j没有表结构的概念，但它有结点和关系的概念。例如，现在有演员和电影两个实体，它们的关系表现为一个演员在一部电影中扮演一个角色。那么就可以创建演员和电影两个节点实体，和一个角色关系实体。它们的实体 - 关系模型如图2-5所示。这个实体 - 关系模型的定义比起关系型数据库的实体 - 关系模型的定义要简单得多，但是它更加形象和贴切地表现了实体之间的关系。更难能可贵的是，这个实体 - 关系模型是可以不经过任何转换而直接传入数据库的，也就是说，在Neo4j数据库中保存的数据与图2-5所示的相同，它仍然是一张图。这对于业务人员和数据库设计人员来说，它的意义相同。所以使用Neo4j数据库，将在很大程度上减轻了设计工作和沟通成本。
+
+![1557713031409](assets/1557713031409.png)
+
+像JPA使用了ORM意义，Neo4j使用了对象 - 图形映射（Object-Graph Mapping，OGM）的方式来建模。代码清单2-21是演员结点实体建模，使用注解@JsonIdentityInfo是防止查询数据时引发递归访问效应，注解@NodeEntity标志这个类是一个节点实体，注解@GraphId定义了节点的一个唯一性标识，它将在创建节点时由系统自动生成，所以它是不可缺少的。这个节点预定义了其他两个属性，name和born。节点的属性可以随需要增加或减少，这并不影响结点的使用。
+
+``` java
+package com.spring.boot.neo4j.domain;
+
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.voodoodyne.jackson.jsog.JSOGGenerator;
+import org.neo4j.ogm.annotation.GraphId;
+import org.neo4j.ogm.annotation.NodeEntity;
+
+/**
+ * Actor
+ *
+ * @author shenhuanjie
+ * @date 2019/5/13 10:08
+ */
+@JsonIdentityInfo(generator = JSOGGenerator.class)
+@NodeEntity
+public class Actor {
+    @GraphId
+    Long id;
+    private String name;
+    private int born;
+
+    public Actor() {
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setBorn(int born) {
+        this.born = born;
+    }
+
+    public int getBorn() {
+        return born;
+    }
+
+}
+
+```
+
+代码清单2-22是电影节点实体建模，注解@Relationship表示List<Role>是一个关系列表，其中type设定了关系的类型，direction设定这个关系的方向，Relationship.INCOMING表示以这个节点为终点。addRole定义了增加一个关系的方法。
+
+```java
+package com.spring.boot.neo4j.domain;
+
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.voodoodyne.jackson.jsog.JSOGGenerator;
+import org.neo4j.ogm.annotation.GraphId;
+import org.neo4j.ogm.annotation.NodeEntity;
+import org.neo4j.ogm.annotation.Relationship;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Movie
+ *
+ * @author shenhuanjie
+ * @date 2019/5/13 10:19
+ */
+@JsonIdentityInfo(generator = JSOGGenerator.class)
+@NodeEntity
+public class Movie {
+    @GraphId
+    Long id;
+    String title;
+    String year;
+
+    @Relationship(type = "ACTS_IN", direction = Relationship.DIRECTION)
+    List<Role> roles = new ArrayList<>();
+
+    public Role addRole(Actor actor, String name) {
+        Role role = new Role(actor, this, name);
+        this.roles.add(role);
+        return role;
+    }
+
+    public Movie() {
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getYear() {
+        return year;
+    }
+
+    public void setYear(String year) {
+        this.year = year;
+    }
+
+    public List<Role> getRoles() {
+        return roles;
+    }
+}
+```
+
+代码清单2-23是角色的关系实体建模，注解@RelationshipEntity表明这个类是一个关系实体，并用type指定了关系的类型，其中@StartNode指定起始节点的实体，@EndNode指定终止节点的实体，这说明了图中一条有向边的起点和终点的定义。其中定义了一个创建关系的构造函数Role（Actor actor，Movie movie，String name），这里的name参数用来指定这个关系的属性。
+
+```java
+package com.spring.boot.neo4j.domain;
+
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.voodoodyne.jackson.jsog.JSOGGenerator;
+import org.neo4j.ogm.annotation.EndNode;
+import org.neo4j.ogm.annotation.GraphId;
+import org.neo4j.ogm.annotation.RelationshipEntity;
+import org.neo4j.ogm.annotation.StartNode;
+
+/**
+ * Role
+ *
+ * @author shenhuanjie
+ * @date 2019/5/13 10:17
+ */
+@JsonIdentityInfo(generator = JSOGGenerator.class)
+@RelationshipEntity(type = "ACTS_IN")
+public class Role {
+    @GraphId
+    Long id;
+    String role;
+    @StartNode
+    Actor actor;
+    @EndNode
+    Movie movie;
+
+    public Role() {
+    }
+
+    public Role(Actor actor, Movie movie, String name) {
+        this.actor = actor;
+        this.movie = movie;
+        this.role = name;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public Actor getActor() {
+        return actor;
+    }
+
+    public Movie getMovie() {
+        return movie;
+    }
+
+}
+```
+
+### 2.4.3 节点实体持久化
+
+像对其他数据库的访问和存取等操作一样，spring-data-neo4j提供了功能丰富的资源库可供调用，因此，对于演员和电影节点实体，可以创建它们对应的资源库接口，实现实体的持久化。代码清单2-24是电影资源库接口的定义，它继承于GraphRepository接口，实现了电影实体的持久化。使用相同方法可以对演员的节点实体实现持久化。关系实体却不用实现持久化，当保存节点实体时，节点实体的关系将会同时保存。
+
+```java
+package com.spring.boot.neo4j.repository;
+
+import com.spring.boot.neo4j.domain.Movie;
+import org.springframework.data.neo4j.repository.GraphRepository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+/**
+ * MovieRepository
+ *
+ * @author shenhuanjie
+ * @date 2019/5/13 10:30
+ */
+@Repository
+public interface MovieRepository extends GraphRepository<Movie> {
+    Movie findByTitle(@Param("title") String title);
+}
+```
+
+其中GraphRepository接口的继承关系也遵循了Spring Boot资源库定义的规则，即使用与JPA相同的标准规范，所以它同样包含使用数据库的丰富功能，如图2-6所示。
+
+![1557714796952](assets/1557714796952.png)
+
+### 2.4.4 Neo4j测试
+
+代码清单2-24是Neo4j的数据库配置类，其中@EnableTransactionManagement启用了事务管理，@EnableNeo4jReprositories启用了Neo4j资源库并指定了我们定义的资源库接口的位置，在重载的SessionFactory的函数中设定了定义实体的位置，这将促使定义的实体被作为域对象导入，RemoteServer设定连接Neo4j服务器的URL、用户名和密码，这些参数要依据安装Neo4j服务器的情况来设置。如果还没有安装Neo4j服务器，可参考附录A的方法进行安装，安装完成后启动服务器以备使用。
+
+```java
+package com.spring.boot.neo4j.config;
+
+import org.neo4j.ogm.session.SessionFactory;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.neo4j.config.Neo4jConfiguration;
+import org.springframework.data.neo4j.repository.config.EnableNeo4jRepositories;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+
+@Configuration
+@EnableTransactionManagement
+@EnableNeo4jRepositories(basePackages = { "com.spring.boot.neo4j.repository" })
+public class Neo4jConfig extends Neo4jConfiguration {
+//SDN 升级到4.1.5，连接服务器的配置改在ogm.properties中设定，这样可以访问Neo4j 2.x 到 3.x 版本
+//    @Override
+//    public Neo4jServer neo4jServer() {
+//        return new RemoteServer("http://192.168.1.221:7474","neo4j","12345678");
+//    }
+
+    @Override
+    public SessionFactory getSessionFactory() {
+        return new SessionFactory("com.spring.boot.neo4j.domain");
+    }
+}
+```
+
+现在可以编写一个测试程序来验证和演示上面编写的代码的功能，如代码清单2-26所示。这个测试程序分别创建了三部电影和三个演员，以及三个演员在三部电影中各自扮演的角色，然后按照电影标题查出一部电影，按照其内在的关系输出这部电影的信息和每个演员扮演的角色。这些数据的内容参照了Neo4j帮助文档中提供的示例数据。
+
+```java
+package com.spring.boot.neo4j.test;
+
+
+import com.spring.boot.neo4j.config.Neo4jConfig;
+import com.spring.boot.neo4j.domain.Actor;
+import com.spring.boot.neo4j.domain.Movie;
+import com.spring.boot.neo4j.domain.Role;
+import com.spring.boot.neo4j.repository.ActorRepository;
+import com.spring.boot.neo4j.repository.MovieRepository;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.util.Assert;
+
+/**
+ * MovieTest
+ *
+ * @author shenhuanjie
+ * @date 2019/5/13 12:09
+ */
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(classes = {Neo4jConfig.class})
+public class MovieTest {
+    private static Logger logger = LoggerFactory.getLogger(MovieTest.class);
+
+    @Autowired
+    MovieRepository movieRepository;
+    @Autowired
+    ActorRepository actorRepository;
+
+    @Before
+    public void initData(){
+        movieRepository.deleteAll();
+        actorRepository.deleteAll();
+
+        Movie matrix1 = new Movie();
+        matrix1.setTitle("The Matrix");
+        matrix1.setYear("1999-03-31");
+
+        Movie matrix2 = new Movie();
+        matrix2.setTitle("The Matrix Reloaded");
+        matrix2.setYear("2003-05-07");
+
+        Movie matrix3 = new Movie();
+        matrix3.setTitle("The Matrix Revolutions");
+        matrix3.setYear("2003-10-27");
+
+        Actor keanu = new Actor();
+        keanu.setName("Keanu Reeves");
+
+        Actor laurence = new Actor();
+        laurence.setName("Laurence Fishburne");
+
+        Actor carrieanne = new Actor();
+        carrieanne.setName("Carrie-Anne Moss");
+
+        matrix1.addRole(keanu,  "Neo");
+        matrix1.addRole(laurence, "Morpheus");
+        matrix1.addRole(carrieanne,  "Trinity");
+        movieRepository.save(matrix1);
+        Assert.notNull(matrix1.getId());
+
+        matrix2.addRole(keanu, "Neo");
+        matrix2.addRole(laurence, "Morpheus");
+        matrix2.addRole(carrieanne,  "Trinity");
+        movieRepository.save(matrix2);
+        Assert.notNull(matrix2.getId());
+
+        matrix3.addRole(keanu, "Neo");
+        matrix3.addRole(laurence, "Morpheus");
+        matrix3.addRole(carrieanne, "Trinity");
+        movieRepository.save(matrix3);
+        Assert.notNull(matrix3.getId());
+    }
+
+    @Test
+    public void get(){
+        Movie movie = movieRepository.findByTitle("The Matrix");
+        Assert.notNull(movie);
+        logger.info("===movie=== movie:{}, {}",movie.getTitle(), movie.getYear());
+        for(Role role : movie.getRoles()){
+            logger.info("====== actor:{}, role:{}", role.getActor().getName(), role.getRole());
+        }
+    }
+}
+```
+
+在IDEA的Run/Debug Configuration配置中增加一个JUnit的配置项目，模块选择neo4j，工作目录选择模块所在的根目录，测试程序选择MovieTest这个类，并将配置保存为neo4jtest。
+
+使用Debug模式运行测试项目neo4jtest，如果测试用过，将在控制台中看到输出查询的这部电影和所有演员及其扮演的角色，如下所示：
+
+```
+===movie=== movie:The Matrix, 1999-03-31
+====== actor:Keanu Reeves, role:Neo
+====== actor:Laurence Fishburne, role:Morpheus
+====== actor:Carrie-Anne Moss, role:Trinity
+```
+
+这时，在数据库客户端的控制台上，单击左面侧边栏的关系类型ACTS_IN，可以看到一个很酷的图像，图中每部电影和每个演员是一个节点，节点的每条有向边代表了这个演员在那部电影中扮演的角色，如图2-7所示。
+
+![1557736421165](assets/1557736421165.png)
 
 ## 2.5 小结
 
