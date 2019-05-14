@@ -370,4 +370,3 @@ Thymeleaf是一个优秀的面向Java的XML/XHTML/HTML 5页面模版，并具有
 其次，必须配置使用Thymeleaf模版的一些参数。在一般的Web项目中都会使用如代码清单3-10所示的配置，其中，prefix指定了HTML文件存放在webapp的/WEB-INF/views/目录下面，或者也可以指定其他路径，其他一些参数的设置其实是使用了Thymeleaf的默认配置。
 
 在实例中，为了更方便将项目发布成jar文件，我们将使用Thymeleaf自动配置中的默认配置选项，即只要在资源文件夹resources中增加一个templates目录即可，这个目录用来存放HTML文件。
-
