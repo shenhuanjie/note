@@ -367,3 +367,11 @@ void destroy() throws Exception
 #### 7. PropertyPlaceholderConfigurer和PropertyOverrideConfigurer
 
 对于PropertyPlaceholderConfigurer而言，它能够在Spring配置文件外部配置其他应用需要使用到的属性，比如通过Java属性文件配置数据库连接信息、LDAP、活动目录连接信息。请参考如下配置Apache DBCP数据源的示例：
+
+```xml
+<bean id="dataSource"
+      class="org.apache.commons.dbcp.BasicDataSource"
+      destroy-method=“close”>
+</bean>
+```
+
