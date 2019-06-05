@@ -372,6 +372,43 @@ void destroy() throws Exception
 <bean id="dataSource"
       class="org.apache.commons.dbcp.BasicDataSource"
       destroy-method=“close”>
+    <property name="driverClassName">
+        <value>${jdbc.driverClassName}</value>
+    </property>
+    <property name="url">
+        <value>${jdbc.url}</value>
+    </property>
+    <property name="username">
+        <value>${jdbc.username}</value>
+    </property>
+    <property name="password">
+        <value>${jdbc.password}</value>
+    </property>
 </bean>
 ```
 
+其中，`${jdbc.driverClassName}`、`${jdbc.url}`、`${jdbc.username}`、`${jdbc.password}`的实际值可以通过Java属性文件获得。比如：
+
+```xml
+<bean id="propertyConfigurer"
+      class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+    <property name="location">
+        <value>jdbc.properties</value>
+    </property>
+</bean>
+```
+
+而jdbc.properties属性文件的内容示例如下：
+
+```xml
+jdbc.driverClassName=com.mysql.jdbc.Driver
+jdbc.url=jdbc:mysql://localhost/example
+jdbc.username=sa
+jdbc.password=
+```
+
+对于PropertyOverrideConfigurer而言，功能类似。它们的详细使用，请开发者参考Spring框架的JavaDoc文档。
+
+#### 8. BeanFactoryAware与BeanNameAware
+
+对于某些基于Spring的应用而言，往往存在这一一种需求，即将应用的BeanFactory实例注入到JavaBean实例中。比如，
