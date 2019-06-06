@@ -411,4 +411,18 @@ jdbc.password=
 
 #### 8. BeanFactoryAware与BeanNameAware
 
-对于某些基于Spring的应用而言，往往存在这一一种需求，即将应用的BeanFactory实例注入到JavaBean实例中。比如，
+对于某些基于Spring的应用而言，往往存在这一一种需求，即将应用的BeanFactory实例注入到JavaBean实例中。比如，为在某JavaBean实例中动态获得BeanFactory创建的某单例JavaBean，但是该单例JavaBean并没有显式地使用到它。此时，借助于BeanFactoryAware能够满足开发者需求。
+
+现有如下示例代码：
+
+```xml
+<bean id="dataSource"
+      class="org.springframework.jndi.JndiObjectFactoryBean">
+    <property name="jndiName">
+        <value>java:/MySqlDS</value>
+    </property>
+</bean>
+
+<bean id="example1lserviceTarget"
+```
+
