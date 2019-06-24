@@ -945,3 +945,200 @@ public String handle14(User user){
 
 在Spring MVC中，控制器可以不依赖任何Servlet API对象，但是Spring MVC并不能阻止我们使用Servlet API的类作为处理方法的入参。以下处理方法都可以正确地工作，如代码清单17-13所示。
 
+```java
+package com.smart.web;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.util.WebUtils;
+
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+/**
+ * UserController
+ *
+ * @author shenhuanjie
+ * @date 2019/6/22 11:47
+ */
+@Controller
+@RequestMapping("/user")
+public class UserController {
+
+    /**
+     * 同时使用HttpServletRequest/HttpServletResponse作为入参
+     *
+     * @param request
+     * @param response
+     */
+    @RequestMapping(path = "/handle21")
+    public void handle21(HttpServletRequest request, HttpServletResponse response) {
+        String userName = WebUtils.findParameterValue(request, "userName");
+        response.addCookie(new Cookie("userName", userName));
+    }
+
+    /**
+     * 仅使用HttpServletRequest作为入参
+     *
+     * @param request
+     * @return
+     */
+    @RequestMapping(path = "/handle22")
+    public ModelAndView handle22(HttpServletRequest request) {
+        String userName = WebUtils.findParameterValue(request, "userName");
+        ModelAndView mav = new ModelAndView();
+        mav.setViewName("success");
+        mav.addObject("userName", userName);
+        return mav;
+    }
+
+    /**
+     * 使用HttpSession作为入参
+     *
+     * @param session
+     * @return
+     */
+    @RequestMapping(path = "/handle23")
+    public String handle23(HttpSession session) {
+        session.setAttribute("sessionId", 1234);
+        return "success";
+    }
+
+    /**
+     * 既使用HttpServletRequest,又使用基本类型的入参
+     *
+     * @param request
+     * @param userName
+     * @return
+     */
+    @RequestMapping(path = "/handle24")
+    public String handle24(HttpServletRequest request, @RequestParam("userName") String userName) {
+        return "success";
+    }
+}
+
+```
+
+在使用Servlet API的类作为入参时，Spring MVC会自动将Web层对应的Servlet对象传递给处理方法的入参。处理方法入参可以同时使用Servlet API类的入参和其他符合要求的入参，它们之间的位置顺序没有特殊要求。
+
+值得注意的是，如果处理方法自行使用HttpServletResponse返回响应，则处理方法的返回值设置为void即可，如①处所示。
+
+Spring MVC在org.springframework.web.context.request包中定义了若干个可代理Servlet原生API类的接口，如WebRequest和NativeWebRequest，它们也允许作为处理类的入参，通过这些代理类可访问请求对象的任何信息，如下：
+
+```java
+@RequestMapping(path = "/handle25")
+public String handle25(WebRequest request) {
+    String userName = request.getParameter("userName");
+    return "success";
+}
+```
+
+**6. 使用I/O对象作为入参**
+
+Servlet的ServletRequest拥有getInputStream()和getReader()方法，可以通过它们读取请求的信息。相应的，Servlet的ServletResponse拥有getOutputStream()和getWriter()方法，可以通过它们输出响应信息。
+
+Spring MVC允许控制器的处理方法使用java.io.InputStream/java.io.Reader及java.io.OutputStream/java.io.Write作为方法的入参，Spring MVC将获取ServletRequest的InputStream/Reader或ServletResponse的OutputStream/Writer，然后传递给控制器的处理方法，如 代码清单17-14所示。
+
+```java
+package com.smart.web;
+
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Controller;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import java.io.IOException;
+import java.io.OutputStream;
+
+/**
+ * UserController
+ *
+ * @author shenhuanjie
+ * @date 2019/6/22 11:47
+ */
+@Controller
+@RequestMapping("/user")
+public class UserController {
+
+    public void handle31(OutputStream os) throws IOException {
+        // 读取类路径下的图片文件
+        Resource res = new ClassPathResource("/image.jps");
+        // 将图片写到输出流中
+        FileCopyUtils.copy(res.getInputStream(), os);
+    }
+}
+
+```
+
+**7. 其他类型的参数**
+
+控制器处理方法的入参除支持以上类型的参数外，还支持java.util.Locale、java.security.Principal，可以通过Servlet的HttpServletRequest的getLocale()和getUserPrincipal()方法得到相应的值。如果处理方法的入参类型为Locale或Pricipal，则Spring MVC自动从请求对象中获取相应的对象并传递给处理方法的入参。
+
+### 17.2.5 使用`HttpMessageConverter<T>`
+
+HttpMessageConverter<T>是Spring的一个重要接口，它负责将请求信息转换为一个对象（类型为T），将对象（类型T）输出为响应信息。
+
+DispatcherServlet默认已经安装了RequestMappingHandlerAdapter作为HandlerAdapter的组件实现类，HttpMessageConverter即由RequestMappingHandlerAdapter使用，将请求信息转换为对象，或将对象转换为响应信息。
+
+HttpMessageConverter<T>接口定义了以下几个方法。
+
+* Boolean canRead(Class<?>clazz，MediaType mediaType)：指定转换器可以读取对象类型，即转换器可将请求信息转换为clazz类型的对象；同时指定支持的MIME媒体类型（如text/html、application/json等），MIME媒体类型在RFC2616中定义（MIME类型说明可参见http://www.w3school.com.cn/media/media_mimeref.asp）。
+* Boolean canWrite(Class<?>clazz,MediaType mediaType)：指定转换器可以将clazz类型的对象写到响应流中，响应流支持的媒体类型在mediaType中定义。
+* List<MediaType>getSupportedMediaTypes()：该转换器支持的媒体类型。
+* T read(Class<? extends T>clazz，HttpInputMessage inputMessage)：将请求信息刘转换为T类型的对象。
+* void write(T t,MediaType contentType,HttpOutputMessage outputMessage)：将T类型的对象写到响应流中，同时指定响应的媒体类型为contentType。
+
+**1. HttpMessageConverter<T>的实现类**
+
+Spring为HttpMessageConverter<T>提供了众多的实现类，它们组成了一个功能强大、用途广泛的HttpMessageConverter<T>家族，具体说明如表17-2所示。
+
+![1561300009103](assets/1561300009103.png)
+
+![1561300133557](assets/1561300133557.png)
+
+![1561300151034](assets/1561300151034.png)
+
+RequestMappingHandlerAdapter默认已经装配了以下HttpMessageConverter：
+
+* StringHttpMessageConverter。
+* ByteArrayHttpMessageConverter。
+* SourceHttpMessageConverter。
+* AllEncompassingFormHttpMessageConverter。
+
+如果需要装配其他类型的HttpMessageConverter，则可在Spring的Web容器上下文中自行定义一个RequestMappingHandlerAdapter，如代码清单17-15所示。
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+    <context:component-scan base-package="com.smart.web"/>
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver"
+          p:prefix="/WEB-INF/views/"
+          p:suffix=".jsp"/>
+    <!--    ① 定义一个RequestMappingHandlerAdapter-->
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter"
+          p:messageConverters="messageConverters"/>
+    <!--    ① HttpMessageConverter列表-->
+    <util:list id="messageConverters">
+        <bean class="org.springframework.http.converter.BufferedImageHttpMessageConverter"/>
+        <bean class="org.springframework.http.converter.ByteArrayHttpMessageConverter"/>
+        <bean class="org.springframework.http.converter.StringHttpMessageConverter"/>
+        <bean class="org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter"/>
+    </util:list>
+</beans>
+```
+
+如果在Spring Web容器中显式定义了一个RequestMappingHandlerAdapter，则Spring MVC将使用它覆盖默认的RequestMappingHandlerAdapter。
+
+**2. 使用HttpMessageConverter<T>**
+
+如何使用HttpMessageConverter<T>将请求信息转换并绑定到处理方法的入参中呢？Spring MVC提供了两种途径。
+
