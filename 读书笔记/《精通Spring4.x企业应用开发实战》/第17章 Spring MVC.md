@@ -1142,3 +1142,1089 @@ RequestMappingHandlerAdapter默认已经装配了以下HttpMessageConverter：
 
 如何使用HttpMessageConverter<T>将请求信息转换并绑定到处理方法的入参中呢？Spring MVC提供了两种途径。
 
+* 使用@RequestBody/@ResponseBody对处理方法进行标注。
+* 使用HttpEntity<T>/ResponseEntity<T>作为处理方法的入参或返回值。
+
+下面分别通过实例进行说明。首先来看使用@RequestBody/@ResponseBody的例子，如代码清单17-16所示。
+
+```java
+package com.smart.web;
+
+
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Controller;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import java.io.IOException;
+
+/**
+ * UserController
+ *
+ * @author shenhuanjie
+ * @date 2019/6/22 11:47
+ */
+@Controller
+@RequestMapping("/user")
+public class UserController {
+
+    /**
+     * 将请求报文体转换为字符串绑定到requestBody入参中
+     *
+     * @param requestBody
+     * @return
+     */
+    @RequestMapping(path = "/handle41")
+    public String handle41(@RequestBody String requestBody) {
+        System.out.println(requestBody);
+        return "success";
+    }
+
+    /**
+     * 读取一张图片，并将图片数据输出到响应流中，客户端将显示这张图片
+     *
+     * @param imageId
+     * @return
+     * @throws IOException
+     */
+    @ResponseBody
+    @RequestMapping(path = "/handle42/{imageId}")
+    public byte[] handle42(@PathVariable("imageId") String imageId) throws IOException {
+        System.out.println("load image of " + imageId);
+        Resource res = new ClassPathResource("/image.jsp");
+        byte[] fileData = FileCopyUtils.copyToByteArray(((ClassPathResource) res).getInputStream());
+        return fileData;
+    }
+}
+
+```
+
+在代码清单17-15中，已经为RequestMappingHandlerAdapter注册了若干个HttpMessageConverter。handle41()方法的requestBody入参标注了一个@RequestBody注解，如①处所示，Spring MVC将根据requestBody的类型查找匹配的HttpMessageConverter。由于StringHttpMessageConverter的泛型类型对应String，所以StringHttpMessageConverter将被Spring MVC选中，用它将请求体信息进行转换并将结果绑定到requestBody入参上。
+
+handle42()方法拥有一个@ResponseBody注解，如②处所示。由于方法返回值类型为byte[]，所以Spring MVC根据类型匹配的查找规则将使用ByteArrayHttpMessageConverter对返回值进行处理，即将图片数据流输出到客户端。
+
+下面编写一个测试用例，通过RestTemplate对handle41()及handle42()这两个方法进行测试，如代码清单17-17所示。
+
+```java
+package com.smart.web;
+
+
+import org.junit.Test;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
+
+public class UserControllerTest {
+
+    @Test
+    public void handle41() {
+        RestTemplate restTemplate = new RestTemplate();
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("userName", "tom");
+        form.add("password", "123456");
+        form.add("age", "45");
+        // 第一个参数为URL，第二个参数通过MultiValueMap准备报文体的参数数据
+        restTemplate.postForLocation("http://localhost:8080/chapter17/user/handle41.html", form);
+    }
+
+    @Test
+    public void handle42() throws IOException {
+        RestTemplate restTemplate = new RestTemplate();
+        // 第二个参数为报文体参数数据，第三个参数指定方法的返回值类型，第四个参数为URL占位符参数的值
+        byte[] response = restTemplate.postForObject("http://localhost:8080/chapter17/user/handle42.html", null, byte[].class, "1233");
+        Resource outFile = new FileSystemResource("c:image_copy.jpg");
+        FileCopyUtils.copy(response, outFile.getFile());
+    }
+}
+```
+
+RestTemplate是Spring的模版类，在客户端程序中可使用该类调用Web服务器端的服务，它支持REST风格的URL。此外，它像RequestMappingHandlerAdapter一样拥有一张HttpMessageConverter的注册表，RestTemplate默认已经注册了以下HttpMessageConverter：
+
+* ByteArrayHttpMessageConverter。
+* StringHttpMessageConverter。
+* ResourceHttpMessageConverter。
+* SourceHttpMessageConverter。
+* AllEncompassingFormHttpMessageConverter。
+
+所以，在默认情况下，RestTemplate就可以利用这些HttpMessageConverter对响应数据进行相应的转换处理。可通过RestTemplate的setMessageConverters(List<HttpMessageConverter<?>>messageConverters)方法手工注册HttpMessageConverter。
+
+和@RequestBody/@ResponseBody类似，HttpEntity<?>不但可以访问请求和响应报文体的数据，还可以访问请求和响应报文头的数据。Spring MVC根据HttpEntity的泛型类型查找对应的HttpMessageConverter。
+
+使用HttpEntity<?>对代码清单17-16中的两个方法进行改造，完成相似的功能，如代码清单17-18所示。
+
+```java
+package com.smart.web;
+
+
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import java.io.IOException;
+
+/**
+ * UserController
+ *
+ * @author shenhuanjie
+ * @date 2019/6/22 11:47
+ */
+@Controller
+@RequestMapping("/user")
+public class UserController {
+
+    /**
+     * 使用StringHttpMessageConverter将请求报文体及报文头的信息绑定到httpEntity中，在方法中可以对相应信息进行访问
+     *
+     * @param httpEntity
+     * @return
+     */
+    @RequestMapping(path = "/handle43")
+    public String handle43(HttpEntity<String> httpEntity) {
+        long contentLen = httpEntity.getHeaders().getContentLength();
+        System.out.println(httpEntity.getBody());
+        return "success";
+    }
+
+    /**
+     * 在方法中创建HttpEntity<byte[]>对象并返回，ByteArrayHttpMessageConverter负责将其输出到响应流中
+     *
+     * @param imageId
+     * @return
+     * @throws IOException
+     */
+    @RequestMapping(path = "handle44/{imageId}")
+    public ResponseEntity<byte[]> handle44(@PathVariable("imageId") String imageId) throws IOException {
+        Resource res = new ClassPathResource("/image.jpg");
+        byte[] fileData = FileCopyUtils.copyToByteArray(res.getInputStream());
+        ResponseEntity<byte[]> responseEntity = new ResponseEntity<byte[]>(fileData, HttpStatus.OK);
+        return responseEntity;
+    }
+}
+
+```
+
+在①处使用HttpEntity<String>指定入参的类型，Spring MVC分析出泛型类型为String，使用StringHttpMessageConverter将请求体内容绑定到httpEntity中，返回的String类型的值为逻辑视图名。
+
+②处的处理方法返回值类型为ResponseEntity<byte[]>，Spring MVC分析出泛型类型为<byte[]>，使用ByteArrayHttpMessageConverter输出图片数据流。
+
+通过以上两个实例，可以得出以下几条结论。
+
+* 当控制器处理方法使用@RequestBody/@ResponseBody或HttpEntity<T>/ResponseEntity<T>时，Spring MVC才使用注册的HttpMessageConverter对请求/响应消息进行处理。
+* 当控制器处理方法使用@RequestBody/@ResponseBody或HttpEntity<T>/ResponseEntity<T>时，Spring首先根据请求头或响应头的Accept属性选择匹配的HttpMessageConverter，然后根据参数类型或泛型类型的过滤得到匹配的HttpMessageConverter，如果找不到可用的HttpMessageConverter则报错。
+* @RequestBody和@ResponseBody不需要成对出现。如果方法入参使用了@RequestBody，则Spring MVC选择匹配的HttpMessageConverter将请求消息转换并绑定到该入参中。如果处理方法标注了@ResponseBody，则Spring MVC选择匹配的HttpMessageConverter将方法返回值转换并输出响应信息。
+* HttpEntity<T>/ResponseEntity<T>的功能和@RequestBody/@ResponseBody相似。
+
+**3. 处理XML和JSON**
+
+Spring MVC提供了几个处理XML和JSON格式的请求/响应消息的HttpMessageConverter。
+
+* MarshallingHttpMessageConverter：处理XML格式的请求或响应消息。
+* Jaxb2RootElementHttpMessageConverter：同上，底层使用JAXB。
+* MappingJackson2HttpMessageConverter：处理JSON格式的请求或响应消息。
+
+因此，只要在Spring Web容器中为RequestMappingHandlerAdapter装配好相应的处理XML和JSON格式的请求/响应消息的HttpMessageConverter，并在交互中通过请求的Accept指定MIME类型，Spring MVC就可使服务器端的处理方法和客户端透明地通过XML或JSON格式的消息进行通信，开发者几乎无须关心通信层数据格式的问题，可以将精力集中到业务层的处理上。单就这一点而言，其他MVC框架和Spring MVC相比，就如诸葛亮给关云长的评语一样：”犹未及美髯公绝伦超群也。”
+
+首先为RequestMappingHandlerAdapter装配可处理XML和JSON格式的请求/响应消息的HttpMessageConverter。
+
+```xml
+<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter"
+      p:messageConverters-ref="messageConverters"/>
+
+<util:list id="messageConverters">
+    <bean class="org.springframework.http.converter.BufferedImageHttpMessageConverter"/>
+    <bean class="org.springframework.http.converter.ByteArrayHttpMessageConverter"/>
+    <bean class="org.springframework.http.converter.StringHttpMessageConverter"/>
+    <bean class="org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter"/>
+    <bean class="org.springframework.http.converter.xml.MarshallingHttpMessageConverter"
+          p:marshaller-ref="xmlMarshaller"
+          p:unmarshaller-ref="xmlMarshaller">
+    </bean>
+    <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter"/>
+</util:list>
+
+<!--声明Marshaller，使用XStream技术-->
+<bean id="xmlMarshaller" class="org.springframework.oxm.xstream.XStreamMarshaller">
+    <!--使用STAX对XML消息进行处理，STAX占用内存少，响应速度也很快-->
+    <property name="streamDriver">
+        <bean class="com.thoughtworks.xstream.io.xml.StaxDriver"/>
+    </property>
+    <!--使用XStream的注解定义XML转换规则-->
+    <property name="annotatedClasses">
+        <!--使用XStream注解的类在此声明-->
+        <list>
+            <value>com.smart.domain.User</value>
+        </list>
+    </property>
+</bean>
+```
+
+然后在控制器中编写相应的方法，如代码清单17-20所示。
+
+```java
+@RequestMapping(path = "/handle51")
+public ResponseEntity<User> handle51(HttpEntity<User> requestEntity) {
+    User user = requestEntity.getBody();
+    user.setUserId("1000");
+    return new ResponseEntity<User>(user, HttpStatus.OK);
+}
+```
+
+对于服务器端的处理方法而言，除使用@RequestBody/@ResponseBody或HttpEntity<T>/ResponseEntity<T>进行方法签名外，不需要进行任何额外的处理，借由Spring MVC中装配的HttpMessageConverter，它便拥有了处理XML及JSON格式的消息的能力。
+
+在接收到一个HTTP请求时，handle51()如何知道请求消息的格式？在处理完成后，又根据什么确定响应消息的格式？答案很简单：通过请求头的Content-Type及Accept属性确定。下面使用RestTemplate编写调用handle51()方法的客户端程序，如代码清单17-21所示。
+
+```java
+package com.smart.web;
+
+
+import com.smart.domain.User;
+import com.thoughtworks.xstream.io.xml.StaxDriver;
+import org.junit.Assert;
+import org.junit.Test;
+import org.springframework.http.*;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.xml.MarshallingHttpMessageConverter;
+import org.springframework.oxm.xstream.XStreamMarshaller;
+import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
+import java.util.Collections;
+
+public class UserControllerTest {
+
+    /**
+     * 使用RestTemplate测试UserController#handle51()方法
+     */
+    @Test
+    public void testHandle51() throws IOException {
+        RestTemplate restTemplate = buildRestTemplate();
+
+        // 创建User对象，它将通过RestTemplate流化为XML请求报文
+        User user = new User();
+        user.setUserName("tom");
+        user.setPassword("1234");
+        user.setRealName("汤姆");
+
+        // 指定请求的报文头信息
+        HttpHeaders entityHeaders = new HttpHeaders();
+        entityHeaders.setContentType(MediaType.valueOf("application/xml;UTF-8"));
+        entityHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_XML));
+
+        // 将User流化为XML，放到报文体中，同时指定请求方法及报文头
+        HttpEntity<User> requestEntity = new HttpEntity<User>(user, entityHeaders);
+        ResponseEntity<User> responseEntity = restTemplate.exchange("", HttpMethod.POST, requestEntity, User.class);
+
+        User responseUser = responseEntity.getBody();
+        Assert.assertNotNull(requestEntity);
+        Assert.assertEquals("1000", responseUser.getUserId());
+        Assert.assertEquals("tom", responseUser.getUserName());
+        Assert.assertEquals("汤姆", responseUser.getRealName());
+
+    }
+
+    /**
+     * 创建RestTemplate实例
+     *
+     * @return
+     */
+    private RestTemplate buildRestTemplate() {
+        RestTemplate restTemplate = new RestTemplate();
+
+        // 使用XStream流化器，使用STAX技术处理XML，同时加载使用了XSteam注解的User类
+        XStreamMarshaller xmlMarshaller = new XStreamMarshaller();
+        xmlMarshaller.setStreamDriver(new StaxDriver());
+        xmlMarshaller.setAnnotatedClasses(new Class[]{User.class});
+
+        // 创建处理XML报文的HttpMessageConverter，将其组装到RestTemplate中
+        MarshallingHttpMessageConverter xmlConverter = new MarshallingHttpMessageConverter();
+        xmlConverter.setMarshaller(xmlMarshaller);
+        xmlConverter.setUnmarshaller(xmlMarshaller);
+        restTemplate.getMessageConverters().add(xmlConverter);
+
+        // 创建处理JSON报文的HttpMessageConverter.
+        MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter();
+        restTemplate.getMessageConverters().add(jsonConverter);
+        return restTemplate;
+    }
+}
+```
+
+服务器启动Web服务，运行testhandle51WhitXml()测试方法，使用网络监控工具（如TcpTrace）拦截请求响应报文，如图17-6所示。
+
+![1561354268900](assets/1561354268900.png)
+
+通过以上HTTP请求/响应报文，我们清楚地知道客户端的User对象被流化为一段对应的XML报文（阴影部分），同时通过报文头属性Accept和Content-Type指定接收的MIME类型和文本请求的报文内容均为application/xml。
+
+请求报文被服务器端的UserController#handle51()方法正确处理，它根据请求的报文头属性Accept决定将服务器端的User对象流化为XML并返回HTTP响应报文（阴影部分），同时指定响应报文的Content-Type属性为application/xml。
+
+如果希望通过JSON方式进行通信，则仅需对客户端代码进行轻微的调整即可，服务器端代码无须作任何更改，如代码清单17-22所示。
+
+```java
+// 指定请求的报文头信息
+HttpHeaders entityHeaders = new HttpHeaders();
+entityHeaders.setContentType(MediaType.valueOf("application/json;UTF-8"));
+entityHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+```
+
+将请求报文头的Content-Type及Accept属性更改为application/json即可。再次执行testhandle51()方法，观察HTTP请求/响应报文，如图17-7所示。
+
+![1561354665188](assets/1561354665188.png)
+
+可见，请求报文头的Content-Type及Accept属性更改为application/json，User对象的数据以JSON格式进行传递。
+
+### 17.2.6 使用@RestController和AsyncRestTemplate
+
+**1. @RestController**
+
+从Spring 4.0开始，Spring以Servlet 3.0为基础进行开发。如果使用Spring MVC测试框架，则需要指定Servlet 3.0兼容的JAR包（因为其Mock的对象都是基于Servlet 3.0的）。为方便Rest的开发，Spring引入了一个新的@RestController注解，该注解已经标注了@ResponseBody和@Controller。
+
+```java
+package com.smart.web;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+/**
+ * RestController
+ *
+ * @author shenhuanjie
+ * @date 2019/6/24 13:42
+ */
+@Controller
+@ResponseBody
+public @interface RestController {
+    
+}
+
+```
+
+这样，通过直接在控制器上标注新的@RestController，就不需要在每个@RequestMapping方法上添加@ResponseBody了。
+
+```java
+@RestController
+public class UserController {
+    
+}
+```
+
+当我们使用REST风格开发应用程序时，Spring MVC仅需以下两行配置就可以了：
+
+```xml
+<context:component-scan base-package="com.smart.*"/>
+<mvc:annotation-driven/>
+```
+
+**2. AsyncRestTemplate**
+
+Spring 4.0添加了一个AsyncRestTemplate，支持以异步无阻塞方式进行服务访问。以下是服务器端的Rest服务实现类，如代码清单17-23所示。
+
+```java
+package com.smart.rest;
+
+import com.smart.domain.User;
+import com.smart.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.concurrent.Callable;
+
+/**
+ * UserController
+ *
+ * @author shenhuanjie
+ * @date 2019/6/24 13:48
+ */
+@RestController
+public class UserController {
+
+    private UserService userService;
+
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @RequestMapping("/api")
+    public Callable<User> api() {
+        System.out.println("=====hello");
+        return () -> {
+            Thread.sleep(10L * 1000);//暂停10秒
+
+            User user = new User();
+            user.setId(1L);
+            user.setName("haha");
+            return user;
+        };
+    }
+}
+
+```
+
+在这里，我们模拟一个执行时间为10秒的服务器方法，如果客户端使用RestTemplate，则将以同步方式进行调用，即客户代码需要等待服务器端返回后才继续执行。下面使用AsyncRestTemplate以异步的方式进行服务调用，如代码清单17-24所示。
+
+```java
+package com.smart.rest;
+
+import com.smart.domain.User;
+import org.junit.Test;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.concurrent.ListenableFuture;
+import org.springframework.util.concurrent.ListenableFutureCallback;
+import org.springframework.web.client.AsyncRestTemplate;
+
+public class UserControllerTest {
+
+    @Test
+    public void api() {
+        AsyncRestTemplate template = new AsyncRestTemplate();
+
+        // 调用完后立即返回（没有阻塞）
+        ListenableFuture<ResponseEntity<User>> future = template.getForEntity("http://localhost:8080/chapter17/api", User.class);
+
+        // 处理服务器端响应的异步回调方法
+        future.addCallback(new ListenableFutureCallback<ResponseEntity<User>>() {
+            @Override
+            public void onFailure(Throwable ex) {
+                System.out.println("=====client failure:" + ex);
+            }
+
+            @Override
+            public void onSuccess(ResponseEntity<User> result) {
+                System.out.println("=====client get result:" + result.getBody());
+            }
+        });
+
+        System.out.println("==no wait");
+    }
+}
+```
+
+①处的执行会立即返回，不会同步阻塞。待服务器端返回请求响应后，②处注册的回调函数会被自动异步调用。
+
+AsyncRestTemplate默认使用SimpleClientHttpRequestFactory进行HTTP操作，其底层通过java.net.HttpURLConnection实现。也可以使用其他的实现方式，如template.setAsyncRequestFactory(new HttpComponentsAsyncClientHttpRequestFactory())语句将使用Apache的http components作为底层访问组件。
+
+### 17.2.7 处理模型数据
+
+对于MVC框架来说，模型数据是最重要的，因为控制（C）是为了产生模型数据（M），而视图（V）则是为了渲染模型数据。
+
+通过前面的学习我们已经知道，Spring MVC通过@RequestMapping将请求引导到处理方法上，使用合适的方法签名将请求消息绑定到入参中。方法入参绑定请求消息只是处理方法的第一步，还有更为重要的任务等待完成，即根据入参执行相应的逻辑，参生模型数据，导向到特定视图中。
+
+将模型数据暴露给视图是Spring MVC框架的一项重要工作。Spring MVC提供了多种途径输出模型数据，介绍如下：
+
+* ModelAndView：当处理方法返回值类型为ModelAndView时，方法体即可通过该对象添加模型数据。
+* @ModelAttribute：在方法入参标注该注解后，入参的对象就会放到数据模型中。
+* Map及Model：如果方法入参为org.springframework.ui.Model、org.springframework.ui.ModelMap或java.util.Map，则当处理方法返回时，Map中的数据会自动添加到模型中。
+* @SessionAttribute：将模型中的某个属性暂存到HttpSession中，以便多个请求之间可以共享这个属性。
+
+**1. ModelAndView**
+
+控制器处理方法的返回值如果为ModelAndView，则其既包含视图信息，又包含模型数据信息，这样Spring MVC就可以使用视图对模型数据进行渲染了。可以简单地将模型数据看成一个Map<String ,Object>对象。
+
+在处理方法的方法体中，可以使用如下方法添加模型数据。
+
+* ModelAndView addObject(String attributeName, Object attributeValue)。
+* ModelAndView addAllObjects(Map<String,?>modelMap)。
+
+可以通过如下方法设置视图。
+
+* void setView(View view)：指定一个具体的视图对象。
+* void setViewName(String viewName)：指定一个逻辑视图名。
+
+ModelAndView的使用非常简单，请参照17.1.3节的实例。
+
+**2. @ModelAttribute**
+
+如果希望将方法入参对象添加到模型中，则仅需在相应入参前使用@ModelAttribute注解即可。来看一个具体的实例，如代码清单17-25所示。
+
+```java
+@RequestMapping(path = "/handle61")
+public String handle61(@ModelAttribute("user") User user) {
+    user.setUserId("1000");
+    return "/user/createSuccess";
+}
+```
+
+Spring MVC将请求消息绑定到User对象中，然后再以user为键将User对象放到模型中。在准备对视图进行渲染前，Spring MVC还会进一步将模型中的数据转储到视图的上下文中并暴露给视图对象。对于JSP视图来说，Spring MVC会将模型数据转储到ServletRequest的属性列表中（通过ServletRequest#setAttribute(String name,Object o)方法保存）。
+
+handle61()方法返回的逻辑视图名为/user/createSuccess，对应createSuccess.jsp视图对象，这样createSuccess.jsp就可以使用${user.userName}等方式顺利地访问到模型中的数据了。
+
+除了可以在方法入参上使用@ModelAttribute注解外，还可以在方法定义中使用@ModelAttribute注解。Spring MVC在调用目标处理方法前，会先逐个调用在方法级上标注了@ModelAttribute注解的方法，并将这些方法的返回值添加到模型中。下面是在方法级上使用@ModelAttribute注解的实例，如代码清单17-26所示。
+
+```java
+/**
+ * 在访问UserController中任何一个请求处理方法前，Spring MVC先执行该方法，并将返回值以user为键添加到模型中
+ *
+ * @return
+ */
+@ModelAttribute("user")
+public User getUser() {
+    User user = new User();
+    user.setUserId("1001");
+    return user;
+}
+
+/**
+ * 在此，模型数据会赋给User的入参，然后在根据HTTP请求消息进一步填充覆盖user对象
+ *
+ * @param user
+ * @return
+ */
+@RequestMapping(path = "/handle62")
+public String handle62(@ModelAttribute("user") User user) {
+    user.setUserName("tom");
+    return "/user/createSuccess";
+}
+```
+
+在访问UserController中任何一个请求处理方法前，都会事先执行标注了@ModelAttribute的getUser()方法，并将其返回值以user为键添加到模型中。
+
+由于②处的handle62()方法使用了入参级的@ModelAttribute注解，且属性名和①处方法级@ModelAttribute的属性名相同。这时，Spring MVC会将①处获取的模型属性先赋值给②处的入参user，然后再根据HTTP请求消息对user进行填充覆盖，得到一个整合版本的user对象。
+
+> **提示：**
+>
+> 处理方法入参最多只能使用一个Spring MVC的注解，如handle62(@ModelAttribute(“user")User user)的user入参使用了@ModelAttribute，就不能再使用@RequestParam或@CookieValue。如果使用了两个注解，则Spring MVC将抛出异常。
+
+**3. Map及Model**
+
+Spring MVC在内部使用一个org.springframework.ui.Model接口存储模型数据，它的功能类似于java.util.Map，但它比Map易用。org.springframework.ui.ModelMap实现了Map接口，而org.springframework.ui.ExtendedModelMap扩展于ModelMap的同时实现了Model接口。
+
+Spring MVC在调用方法前会创建一个隐含的模型对象，作为模型数据的存储容器，我们称之为“隐含模型”。如果处理方法的入参为Map或Model类型，则Spring MVC会将隐含模型的引用传递给这些入参。在方法体类，开发者可以通过这个入参对象访问到模型中的所有数据，也可以向模型中添加新的属性数据。来看一个简单的例子，如代码清单17-27所示。
+
+```java
+
+/**
+ * 在访问UserController中任何一个请求处理方法前，Spring MVC先执行该方法，并将返回值以user为键添加到模型中
+ *
+ * @return
+ */
+@ModelAttribute("user")
+public User getUser() {
+    User user = new User();
+    user.setUserId("1001");
+    return user;
+}
+
+/**
+ * Spring MVC将请求对应的隐含模型对象传递给modelMap，因此在方法中可以通过它访问模型中的数据
+ *
+ * @param modelMap
+ * @return
+ */
+@RequestMapping(path = "/handle63")
+public String handle63(ModelMap modelMap) {
+    modelMap.addAttribute("testAttr", "value1");
+    User user = (User) modelMap.get("user");
+    user.setUserName("tom");
+    return "/user/showUser";
+}
+```
+
+Spring MVC一旦发现处理方法有Map或Model类型的入参，就会将请求内的隐含模型对象传递给这些参数，因此在方法体中可以通过这个入参对模型中的数据进行读/写操作。
+
+**4. @SessionAttributes**
+
+如果希望在多个请求之间共用某个模型属性数据，则可以在控制器类中标注一个@SessionAttributes，Spring MVC会将模型中对应的属性暂存到HttpSession中。来看一个实例，如代码清单17-28所示。
+
+```java
+package com.smart.rest;
+
+import com.smart.domain.User;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.bind.support.SessionStatus;
+
+/**
+ * 将模型属性自动保存到HttpSession中
+ */
+@Controller
+@RequestMapping("/user")
+@SessionAttributes("user")
+public class UserController {
+
+    @RequestMapping(path = "/handle71")
+    public String handle71(@ModelAttribute("user") User user) {
+        user.setUserName("John");
+        return "redirect:/user/handle72.html";
+    }
+
+    @RequestMapping(path = "/handle72")
+    public String handle72(ModelMap modelMap, SessionStatus sessionStatus) {
+        // 读取模型中的数据
+        User user = (User) modelMap.get("user");
+        if (user != null) {
+            user.setUserName("Jetty");
+            // 让Spring MVC清除本处理器对应的会话属性
+            sessionStatus.setComplete();
+        }
+        return "/user/showUser";
+    }
+}
+
+```
+
+在①处标注的@SessionAttributes("user")会自动将本处理器中任何处理方法属性名为user的模型属性透明地出错了到HttpSession中。在②处，handle71()方法的User user入参会添加到隐含模型中，于是这个模型属性在handle71()方法执行时，会由Spring MVC将其透明地保存到HttpSession中。
+
+handle71()返回的逻辑视图名为redirect:handle72.html，它将发起另一个请求，而这个请求由handle72()负责处理。handle72()和hangdle71()位于不同的请求上下文中，之所以在③处可以获取名为user的模型属性，就是因为@SessionAttributes("user")透明地将handle71()的user模型属性存储到HttpSession中，而handle72()的隐含模型又自动从HttpSession中获取到这个模型属性。
+
+> **提示：**
+>
+> 我们知道，在一般情况下，控制器方法返回字符串类型的值会被当成逻辑视图名处理。但如果字符串带“forward:"或”redirect:"前缀，则Spring MVC将会对它们进行特殊处理：将“forward:"或”redirect:“当成指示符，其后的字符串作为URL处理，如”redirect:handle72.html“或”forward:http://www.baidu.com“。redirect会让浏览器发起一个新的请求，而forward请求与当前请求同属一个请求。
+
+handle72()方法还包含一个SessionStatus入参，当调用SessionStatus#setComplete()方法时，Spring MVC会清除该控制器类的所有会话属性；否则这个会话属性会一直保存在HttpSession中。
+
+很可惜，当启动Web应用并向handle71()发送请求时，Spring MVC会抛出以下异常信息：
+
+```powershell
+org.springframework.web.HttpSessionRequireException: Session attribute 'user' required - not found in session
+...
+```
+
+这个异常曾令笔者大伤脑筋，因为Spring仅宣称，@SessionAttributes的作用是将处理方法对应的模型属性透明地保存到HttpSession中，并没有要求HttpSession中必须事先拥有对应的模型属性。通过研究Spring MVC的源码，才找到了问题的答案。
+
+原来Spring MVC对@ModelAttribute及@SessionAttributes的处理遵循一个特定的流程，当流程条件不满足时就会报错。这个处理流程简单说明如下。
+
+① Spring MVC在调用处理方法前，在请求线程中自动创建一个隐含的模型对象。
+
+② 调用所有标注了@ModelAttribute的方法，并将方法返回值添加到隐含模型中。
+
+③ 查看Session中是否存在@SessionAttributes("xxx")所指定的xxx属性，如果有，则将其添加到隐含模型中。如果隐含模型中已经有xxx属性，则该步操作会覆盖模型中已有的属性值。
+
+④ 对标准了@ModelAttribute("xxx")处理方法的入参按如下流程处理。
+
+④.1 如果隐含模型拥有名为xxx的属性，则将其赋给该入参，再用请求消息填充该入参对象直接返回，否则转到④.2。
+
+④.2 如果xxx是会话属性，即在处理类定义处标注了@SessionAttributes("xxx")，则尝试从会话中获取该属性，并将其赋给该入参，然后再用请求消息填充该入参对象。**如果在会话中找不到对应的属性，则抛出HttpSessionRequireException异常**。否则转到④.3。
+
+④.3 如果隐含模型中不存在xxx属性，且xxx也不是会话属性，则创建入参的对象实例，然后再用请求消息填充该入参。
+
+分析代码清单17-28，由于在①处标注了@SessionAttribute("user")，因此user为会话属性，Spring MVC在对handle71(@ModelAttribute("user")User user)进行处理时，会先在隐含模型中查询是否有对应的属性，如果不存在，则继续在会话中查询该属性。由于在会话中也不存在该属性，因此报HttpSessionRequireException异常。
+
+解决该异常的方法很简单，只需添加一个标注@ModelAttribute("user")的方法，以便让Spring MVC在处理handle71(@ModelAttribute("user")User user)方法前先向隐含模型中添加user属性，这样④.1步就会执行，而④.2步不会执行，这样就不会抛出HttpSessionRequiredException异常，如代码清单17-29所示。
+
+```java
+package com.smart.rest;
+
+import com.smart.domain.User;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.bind.support.SessionStatus;
+
+/**
+ * 将模型属性自动保存到HttpSession中
+ */
+@Controller
+@RequestMapping("/user")
+@SessionAttributes("user")
+public class UserController {
+    /**
+     * 该方法会向隐含模型中添加一个名为user的模型属性
+     *
+     * @return
+     */
+    @ModelAttribute("user")
+    public User getUser() {
+        User user = new User();
+        user.setUserId("1001");
+        return user;
+    }
+
+    @RequestMapping(path = "/handle71")
+    public String handle71(@ModelAttribute("user") User user) {
+        user.setUserName("John");
+        return "redirect:/user/handle72.html";
+    }
+
+    @RequestMapping(path = "/handle72")
+    public String handle72(ModelMap modelMap, SessionStatus sessionStatus) {
+        // 读取模型中的数据
+        User user = (User) modelMap.get("user");
+        if (user != null) {
+            user.setUserName("Jetty");
+            // 让Spring MVC清除本处理器对应的会话属性
+            sessionStatus.setComplete();
+        }
+        return "/user/showUser";
+    }
+}
+
+```
+
+@SessionAttributes除了可以通过属性名指定需要放到会话中的属性外，还可以通过模型属性的对象类型指定哪些模型属性需要放到会话中。如@SessionAttributes(types=User.class)会将隐含模型中所有类型为User.class的属性添加到会话中。
+
+此外，@SessionAttributes还可以通过属性名以及types一起指定，二者都允许多值，放到会话中的属性是二者的并集。如以下声明方式都是合法的。
+
+* @SessionAttributes(value={"user1","user2"})：将名为user1及user2的模型属性添加到会话助攻。
+* @SessionAttributes(type={User.class,Dept.class})：将模型中所有类型为User及Dept的属性添加到会话中。
+* @SessionAttributes(value={"user1","user2"},types={Dept.class})：将名为user1及user2的模型属性添加到会话中，同时将所有类型为Dept的模型属性添加到会话中。
+
+## 17.3 处理方法的数据绑定
+
+在17.2节中我们知道，Spring会根据请求方法签名的不同，将请求消息中的信息以一定的方式转换并绑定到请求方法的入参中。当请求消息到达真正需要调用的方法时（如制定的业务方法），Spring MVC还有很多工作要做，包括数据转换、数据格式化及数据校验等。
+
+### 17.3.1 数据绑定流程剖析
+
+Spring MVC通过反射机制对目标处理方法的签名进行分析，将请求消息绑定到处理方法的入参中。数据绑定的核心部件是DataBinder，其运行机制描述如图17-8所示。
+
+![1561362648103](assets/1561362648103.png)
+
+Spring MVC主框架将ServletRequest对象及处理方法的入参对象实例传递给DataBinder，DataBinder首先调用装配在Spring Web上下文中的ConversionService组件进行数据类型转换、数据格式化等工作，将ServletRequest中的消息填充到入参对象中，然后调用Validator组件对已经绑定了请求消息数据的入参对象进行数据合法性校验，最终生成数据绑定结果BindingResult对象。BindingResult包含了已完成数据绑定的入参对象，还包含相应的校验错误对象。Spring MVC抽取BindingResult中的入参对象及校验错误对象，将它们赋给处理方法的相应入参。
+
+后面我们将对数据绑定过程中发生的数据转换、数据格式化及数据校验等工作进行详细阐述。
+
+### 17.3.2 数据转换
+
+在第6章中，我们已经学习了如何编写并装配自定义属性编辑器的知识。Java标准的PropertyEditor的核心功能是将一个字符串转换为一个Java对象，以便根据界面的输入或配置文件中的配置字符串构造出一个JVM内部的Java对象。
+
+但是Java原生的PropertyEditor存在以下不足：
+
+* 只能用于字符串到Java对象的转换，不适用与任意两个Java类型之间的转换。
+* 对源对象及目标对象所在的上下文信息（如注解、所在宿主类的结构等）不敏感，在类型转换时不能利用这些上下文信息实施高级的转换逻辑。
+
+鉴于此，Spring在核心模型中添加了一个通用的类型转换模块，类型转换模块位于org.springframework.core.convert包中。Spring希望用这个类型转换体系替换Java标准的PropertyEditor。但由于历史原因，Spring将同时支持两者，在Bean配置、Spring MVC处理方法入参绑定中使用它们。
+
+**1. ConversionService**
+
+ConversionService是Spring类型转换体系的核心接口，它位于org.springframework.core.convert包中，也是该包中的唯一一个接口。ConversionService接口定义了以下4个方法。
+
+* boolean canConvert(Class<?>sourceType,Class<?>targetType)：判断是否可以将一个Java类转换为另一个Java类。
+* Boolean canConvert(TypeDescriptor sourceType,TypeDescriptor targetType)：需要转换的类将以成员变量的方式出现在宿主类中。TypeDescriptor不但描述了需转换类的信息，还描述了从宿主类的上下文信息，如成员变量上的注解，成员变量是否以数组、集合或Map的方式呈现等。类型转换逻辑可以利用这些信息作出各种灵活的控制。
+* <T>T convert(Object source,Class<T>targetType)：将原类型对象转换为目标类型对象。
+* Objcet convert(Object source,TypeDescriptor sourceType,TypeDescriptor targetType)：将对象从原类型对象转换为目标类型对象，此时往往会用到所在宿主类的上下文信息。
+
+第一个和第三个接口方法类似于PropertyEditor，它们不关注类型对象所在的上下文信息，只简单地完成两个类型对象的转换，唯一的区别在于这两个方法支持任意两个类型的转换。而第二个和第四个接口方法会参考类型对象所在宿主类的上下文信息，并利用这些信息进行类型转换。
+
+可以利用org.springframework.context.support.ConversionServiceFactoryBean在Spring的上下文中定义一个ConversionService。Spring将自动识别上下文中的ConversionService，并在Bean属性配置及Spring MVC处理方法入参绑定等场合使用它进行数据转换。具体配置如下：
+
+```xml
+<bean id="conversionService" class="org.springframework.context.support.ConversionServiceFactoryBean"/>
+```
+
+该FactoryBean创建ConversionService内建了很多转换器，可完成大多数Java类型的转换工作。除了包括将String对象转换为各种基础类型的对象外，还包括String、Number、Array、Collection、Map、Properties及Object之间的转换器。
+
+可通过ConversionServiceFactoryBean的converters属性注册自定义的类型转换器，代码如下：
+
+```xml
+<bean id="conversionService" class="org.springframework.context.support.ConversionServiceFactoryBean">
+    <property name="converters">
+        <list>
+            <bean class="com.smart.MyCustomConverter1"/>
+            <bean class="com.smart.MyCustomConverter2"/>
+        </list>
+    </property>
+</bean>
+```
+
+在6.2节中我们知道，通过CustomEditorConfigurer注册的自定义属性编辑器必须实现PropertyEditor接口。现在注册到ConversionServiceFactoryBean中的自定义转换器必须实现哪些接口，并满足哪些约定呢？我们将在接下来的小节中进行说明。
+
+**2. Spring支持哪些转换器**
+
+Spring在org.springframework.core.convert.converter包中定义了3种类型的转换器接口，实现任意一个转换器接口都可以作为自定义转换器注册到ConversionServiceFactoryBean中。这3种类型的转换器接口分别为：
+
+* Converter<S,T>。
+* GenericConverter。
+* ConverterFactory。
+
+首先需要了解的转换器接口是Converter接口，它是Spring中最简单的一个转换器接口，仅包括一个接口方法。该接口定义如下：
+
+```java
+package org.springframework.core.convert.converter;
+public interace Converter<S,T>{
+    T convert(S source);
+}
+```
+
+T converter(S source)负责将S类型的对象转换为T类型的对象。如果希望将一种类型的对象转换为另一种类型及子类的对象，举例来说，将String转换为Number及Number子类）Integer、Long、Double等）对象，就需要一系列的Converter，如StringToInteger、StringToLong及StringToDouble等。Spring提供了一个将相同系列多个“同质”Converter封装在一起的ConverterFactory接口，定义如下：
+
+```java
+package org.springframework.core.convert.converter;
+public interface ConverterFactory<S,R>{
+    <T extends R>Converter<S,T>getConverter(Class<T>targetType);
+}
+```
+
+S为转换的源类型，R为目标类型的基类，而T为扩展于R基类的类型。如Spring的StringToNumberConverterFactory就实现了ConverterFactory接口，封装了String转换到各种数据类型的Converter。
+
+Converter只负责将一个类型的对象转换为另一个类型的对象，并没有考虑类型对象所在宿主类上下文的信息，因此并不能完成“复杂”类型转换工作。GenericConverter接口会根据源类对象及目标类对象所在宿主类的上下文信息进行类型转换工作，其接口定义如下：
+
+```java
+package org.springframework.core.convert.converter;
+public interface GenericConverter{
+    public Set<ConvertiblePair>getConvertibleTypes();
+    Object conver(Object source,TypeDescriptor sourceType,TypeDescriptor targetType);
+}
+```
+
+ConvertiblePair封装了源类型和目标类型，组成一个“对子”，而TypeDescriptor包含了需转换类型对象所在宿主类的信息，因此GenericConverter的convert()接口方法可以利用这些上下文信息进行类型转换工作。
+
+ConditionalGenericConverter扩展与GenericConverter接口，并添加了一个接口方法，如下
+
+```java
+boolean matches(TypeDescriptor sourceType,TypeDescriptor targetType)
+```
+
+该接口方法根据源类型及目标类型所在宿主类的上下文信息决定是否要进行类型转换，只有该接口方法返回true时，才调用convert()方法完成类型转换。正是因为在转换之前有一个是否要进行类型转换的条件判断动作，因此该接口命名为ConditionalGenericConverter，即带“条件”的通用转换器。
+
+ConversionServiceFactoryBean的converters属性可接受Converter、ConverterFactory、GenericConverter或ConditionalGenericConverter接口的实现类，并把这些转换器的转换逻辑统一封装到一个ConversionService实例对象中（GenericConversionService）。Spring在Bean属性配置及Spring MVC请求消息绑定时利用这个ConversionService实例完成类型转换工作。以上过程可通过图17.9来理解。
+
+![1561365453441](assets/1561365453441.png)
+
+**3. 在Spring MVC中使用ConversionService**
+
+假设处理方法有一个User类型的入参，我们希望将一个格式化的请求参数字符串直接转换为User对象，该字符串格式为：
+
+```json
+<userName>:<password>:<realName>
+```
+
+这就要求我们定义一个负责将格式化的String转换为User对象的自定义转换器，如代码清单17-30所示。
+
+```java
+package com.smart.web;
+
+import com.smart.domain.User;
+import org.springframework.core.convert.converter.Converter;
+
+/**
+ * StringToUserConverter
+ *
+ * @author shenhuanjie
+ * @date 2019/6/24 16:40
+ */
+public class StringToUserConverter implements Converter<String, User> {
+    
+    @Override
+    public User convert(String source) {
+        User user = new User();
+        if (source != null) {
+            String[] items = source.split(":");
+            user.setUserName(items[0]);
+            user.setPassword(items[1]);
+            user.setRealName(items[2]);
+        }
+        return user;
+    }
+}
+
+```
+
+编写好StringToUserConverter后，接下来将其安装到Spring上下文中，如代码清单17-31所示。
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:util="http://www.springframework.org/schema/util" xmlns:mvc="http://www.springframework.org/schema/cache"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd">
+    ...
+    <!--装配自定义的ConversionService-->
+    <mvc:annotation-driven conversion-service="conversionService"/>
+    <bean id="conversionService" class="org.springframework.context.support.ConversionServiceFactoryBean">
+        <!--装配StringToUserConverter-->
+        <property name="converters">
+            <list>
+                <bean class="com.smart.domain.StringToUserConverter"/>
+            </list>
+        </property>
+    </bean>
+</beans>
+```
+
+在①处使用了mvc命名空间的<mvc:annotation-driven/>标签，该标签可简化Spring MVC的相关配置。在默认情况下，该标签会创建并注册一个默认的DefaultAnnotationHandlerMapping和一个RequestMappingHandlerAdapter实例。如果上下文中存在自定义的对应组件Bean，则Spring MVC会自动利用自定义的Bean覆盖默认的Bean。
+
+除此之外，<mvc:annotation-driven/>标签还会注册一个默认的ConversionService，即FormattingConversionServiceFactoryBean（参见17.3.3节），以满足大多数类型转换的需求。现在由于注册一个自定义的StringToUserConverter，因此，需要显式定义一个ConversionService覆盖<mvc:annotation-driven/>中的默认实现，这是通过设置<mvc:annotation-driven/>的conversion-service属性来完成的。
+
+在装配好StringToUserConverter后，就可以在任何控制器的处理方法中使用这个转换器了。在UserController中添加一个使用StringToUserConverter的handle81()方法，如代码清单17-32所示。
+
+```java
+/**
+ * @param user
+ * @param modelMap
+ * @return
+ */
+@RequestMapping(path = "/handle81")
+public String handle81(@RequestParam("user") User user, ModelMap modelMap) {
+    modelMap.put("user", user);
+    return "/user/showUser";
+}
+```
+
+启动Web容器，发送一个如下URL请求：
+
+```url
+http://localhost:8080/chapter17/user/handle81.html?user=tom:1234:tomson
+```
+
+user请求参数的`tom:1234:tomson`值将会被StringToUserConverter正式地转换并绑定到handle81()方法的User入参中。
+
+**4. 使用@InitBinder和WebBindingInitializer装配自定义编辑器**
+
+Spring MVC在支持新的转换器框架的同时，也支持JavaBeans的PropertyEditor。可以在控制器中使用@InitBinder添加自定义的编辑器，也可以通过WebBindingInitializer装配在全局范围内使用的编辑器，如代码清单17-33所示。
+
+```java
+package com.smart.rest;
+
+import com.smart.domain.User;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+@Controller
+@RequestMapping("/user")
+public class UserController {
+
+    /**
+     * 在控制器初始化时使用
+     *
+     * @param binder
+     */
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        // 注册一个自定义的编辑器
+        binder.registerCustomEditor(User.class, new UserEditor());
+    }
+}
+
+```
+
+另外，Spring 4.0可以使用addCustomFormatter指定格式化程序实现，这样就不需要实现一个PropertyEditory的实例，如下：
+
+```java
+package com.smart.rest;
+
+import org.springframework.format.datetime.DateFormatter;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+@Controller
+@RequestMapping("/user")
+public class UserController {
+
+    /**
+     * 在控制器初始化时使用
+     *
+     * @param binder
+     */
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        binder.addCustomFormatter(new DateFormatter("yyyy-MM-dd"));
+    }
+}
+
+```
+
+Spring MVC使用WebDataBinder处理请求消息和处理方法入参的绑定工作。在②处通过registerCustomEditor()方法为User注册一个自定义的编辑器，UserEditor是实现PropertyEditor接口的编辑器。
+
+如果希望在全局范围内使用UserEditor编辑器，则可实现WebBindingInitializer接口并在该实现类中注册UserEditor，如代码清单17-34所示。
+
+```java
+package com.smart.rest;
+
+import com.smart.domain.User;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.support.WebBindingInitializer;
+import org.springframework.web.context.request.WebRequest;
+
+/**
+ * MyBindingInitializer
+ *
+ * @author shenhuanjie
+ * @date 2019/6/24 17:06
+ */
+public class MyBindingInitializer implements WebBindingInitializer {
+    @Override
+    public void initBinder(WebDataBinder webDataBinder, WebRequest webRequest) {
+        webDataBinder.registerCustomEditor(User.class, new UserEditor());
+    }
+}
+
+```
+
+上述代码在initBinder()接口方法中注册了UserEditor编辑器。接下来还需要在Spring上下文中通过RequestMappingHandlerAdapter装配MyBindingInitializer，如代码清单17-35所示。
+
+```xml
+<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+    <property name="webBindingInitializer">
+        <bean class="com.smart.rest.MyBindingInitializer"/>
+    </property>
+</bean>
+```
+
+对于同一个类型对象来说，如果既在ConversionService中装配了自定义转换器，又通过WebBindingInitializer装配了自定义编辑器，同时还在控制器中通过@InitBinder装配了自定义编辑器，那么Spring MVC将按以下优先顺序查找对应类型的编辑器：
+
+* 查询通过@InitBinder装配的自定义编辑器。
+* 查询通过ConversionService装配的自定义编辑器。
+* 查询通过WebBindingInitializer装配的自定义编辑器。
+
+### 17.3.3数据格式化
+
+Spring使用转换器进行源类型对象到目标类型对象的转换，Spring的转换器并不提供输入及输出信息格式化的工作。如果需要转换的源类型数据（一般是字符串）是从客户端界面中传递过来的，为了方便使用者观看，这些数据往往具有一定的格式。举例来说，像日期、时间、数字、货币等数据都是具有一定格式的，在不同的本地化环境中，同一类型的数据还会相应地呈现不同的显示格式。
+
+如何从格式化的数据中获取真正的数据以完成数据绑定，并将处理完成的数据输出为格式化的数据，是Spring格式化框架要解决的问题。Spring引入了一个新的格式化框架，这个框架位于org.springframework.format类包中。首先来了解一下格式化框架最重要的Formatter<T>接口。
+
+**1. Formatter<T>**
+
+Formatter<T>接口扩展与Printer<T>和Parser<T>接口。
+
+```java
+package org.springframework.format;
+public interface Formatter<T> extends Printer<T>,Parser<T>{
+    
+}
+```
+
+Printer<T>负责对象的格式化输出，而Parser<T>负责对象的格式化输入，在接口中各定义了一个方法。先来看一下Printer<T>的接口方法。
+
+```java
+String print(T fieldValue,Locale locale);
+```
+
+print()接口方法将类型为T的成员对象根据本地化的不同输出为不同的格式化字符串。
+
+……
+
+## 17.4 视图和视图解析器
+
+请求处理方法执行完成后，最终返回一个ModelAndView对象。对于那些返回String、View或ModelMap等类型的处理方法，Spring MVC也会在内部将它们装配成一个ModelAndView对象，该对象包含了视图逻辑名和模型对象的信息。
+
+Spring MVC借助视图解析器（ViewResolver）得到最终的视图对象（View），这可能是我们常见的JSP视图，也可能是一个基于FreeMarker、Velocity模版技术的视图，还可能是PDF、Excel、XML、JSOn等各种形式的视图。
+
+对于最终究竟采取何种视图对象模型数据进行渲染，处理器并不关心，处理器的工作重点聚焦在生产模型数据的工作上，从而实现MVC的充分解耦。
+
+### 17.4.1 认识视图
+
+### 17.8.2 装配拦截器
+
+当收到请求时，DispatcherServlet将请求交给处理器映射（HandlerMapping），让它找出对应该请求的HandlerExecutionChain对象。
+
+## 17.9 小结
+
+Spring MVC 4.0和早期版本相比有了一个质的飞跃，如更全面和方便地支持REST风格的Web编程、注解驱动、处理方法签名非常灵活、处理器方法不依赖与Servlet API等。
+
+由于Spring MVC框架在后台做了很多隐性工作，所以想深入掌握Spring MVC 4.0并非易事。本章在学习Spring MVC的各项功能的同时，深入内部了解了其后台的运作机理。只有了解了这些运作机理，才能更好地使用这个先进的MVC框架。
+
