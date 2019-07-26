@@ -225,3 +225,70 @@ t2 thread group  belong main TestGroup: true
 
 在默认设置中，当然除了子线程会和父线程同属于一个Group之外，它还会和父线程拥有同样的优先级，同样的daemon，关于这点我们在后文中将会详细讲解。
 
+## 2.4 Thread与Runnable
+
+在本书的第1章中，详细介绍了为什么要有Runnable，以及Runnable接口和Thread之间的关系，Thread负责线程本身相关的职责和控制，而Runnable则负责逻辑执行单元的部分，这里就不再赘述了。
+
+## 2.5 Thread与JVM虚拟机栈
+
+在Thread的构造函数中，可发现有一个特殊的参数stackSize，这个参数的作用是什么呢？它的值对线程有什么影响呢？下面我们就来一起探讨这个问题。
+
+### 2.5.1 Thread与StackSize
+
+打开JDK官方文档，将会发现Thread中对stacksize构造函数的文字说明，具体如下：
+
+> The stack size is the approximate number of bytes of address space that the virtual machine is to allocate for this thread's stack. The effect of the stackSize parameter, if any, is highly platform dependent.
+>
+> One some platforms , specifying a higher value for the stackSize parameter may allow a thread to achieve greater recursion depth before throwing a StackOverflowError. Similarly , specifying a lower value may allow a greater number of threads to exist concurrently without throwing an OutOfMemoryError ( or other internal error ) . The details of the relationship between the value of the stackSize parameter and the maximum recursion depth and concurrency level are platform-dependent. On some platforms, the value of the stackSize parameter may have no effect whatsoever.
+
+一般情况下，创建线程的时候不会手动指定栈内存的地址空间字节数组，统一通过xss参数进行设置即可，通过上面这段官网文档的描述，我们不难发现stacksize越大则代表则正在线程内方法调用递归的深度就越深，stacksize越小则代表则创建的线程数量越多，当然了这个参数对平台的依赖性比较高，比如不同的操作系统、不同的硬件。
+
+在有些平台下，越高的stack设定，可以允许的递归深度越多；反之，越少的stack设定，则递归深度越浅。当然在某些平台下，该参数压根不会起到任何作用，如果将该参数设置为0，也不会起到任何作用，笔者在自己的Windows电脑上和Ubuntu虚拟机上分别作了测试，很明显地看到了stacksize给线程带来的影响。
+
+```java
+/**
+ * ThreadConstruction
+ *
+ * @author shenhuanjie
+ * @date 2019/7/26 11:14
+ */
+public class ThreadConstruction {
+    public static void main(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Please enter the stack size.");
+            System.exit(1);
+        }
+
+        ThreadGroup group = new ThreadGroup("TestGroup");
+        Runnable runnable = new Runnable() {
+            final int MAX = Integer.MAX_VALUE;
+
+            @Override
+            public void run() {
+                int i = 0;
+                recurse(i);
+            }
+
+            private void recurse(int i) {
+                System.out.println(i);
+                if (i < MAX) {
+                    recurse(i + 1);
+                }
+            }
+        };
+
+        Thread thread = new Thread(group, runnable, "Test", Integer.parseInt(args[0]));
+
+        thread.start();
+    }
+}
+
+```
+
+在代码清单2-2中，我们在线程中，设定了一个简单的递归，就是不断调用自己，然后输出int值，为了使得效果更加明显，在运行上面的代码过程中请指定JVM内存参数为：
+
+```
+java -Xmx512m -Xms64m ThreadConstruction 1
+```
+
+由于不断地进行压栈弹栈操作，整个内存肯定会被压爆，也就是说最后都会抛出StackOverflowError异常，笔者分别在Windows 7和Ubuntu环境下进行了多次测试
