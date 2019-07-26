@@ -291,4 +291,10 @@ public class ThreadConstruction {
 java -Xmx512m -Xms64m ThreadConstruction 1
 ```
 
-由于不断地进行压栈弹栈操作，整个内存肯定会被压爆，也就是说最后都会抛出StackOverflowError异常，笔者分别在Windows 7和Ubuntu环境下进行了多次测试
+由于不断地进行压栈弹栈操作，整个内存肯定会被压爆，也就是说最后都会抛出StackOverflowError异常，笔者分别在Windows 7和Ubuntu环境下进行了多次测试，发现在创建Thread时传入的stacksize对递归深度的影响具体如表2-1所示。
+
+![1564136301486](assets/1564136301486.png)
+
+Ubuntu的测试数据还算合理，但是Windows的测试数据让笔者哭笑不得（10 000和100 000），图2-2是针对测试数据的统计对比图。
+
+通过图2-2，大家还是可以很清晰地看到，随着stacksize数量级的不断增加，递归的深度也变得越来越大，该参数一般情况下不会主动设置，采用系统默认的值就可以了，默认情况下会设置成0。
