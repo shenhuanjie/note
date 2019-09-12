@@ -1,0 +1,6 @@
+# 第2章 使用XMLHttpRequest对象
+
+我们已经讨论了动态Web应用的发展历史，并简要介绍了Ajax，下面再来讨论问题的关键：如果使用XMLHttpRequest对象。尽管与其说Ajax是一种技术，不如说是一种技巧，但如果没有对XMLHttpRequest的广泛支持，Google Suggest和Ta-da List可能不会像我们看到的有今天这样的发展，而你可能也不会看到手上的这本书！
+
+XMLHttpRequest最早是在IE 5中以ActiveX组件形式实现的。由于只能在IE中使用，所以大多数开发人员都没有用XMLHttpRequest，直到最近，Mozilla 1.0和Safari 1.2把它采用为事实上的标志，情况才有改观。
+
