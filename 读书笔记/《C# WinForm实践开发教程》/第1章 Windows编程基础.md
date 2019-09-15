@@ -178,3 +178,312 @@ namespace WindowsFormsApp1
 
 在WinForm应用程序的开发设计中，一般会通过多窗体协调一致的处理具体业务流程。这种应用必须由程序员决定哪个WinForm的窗体第一个被触发执行：在Windows Forms开发程序设计中则由位于根目录下的Program.cs文件决定。展开Program.cs文件，按照下面代码即可决定哪个WinForm的表单第一个被触发执行。
 
+## 1.3 WinForm中的常用控件
+
+**学习目标**
+
+* System.Windows.Forms.Control的基本结构
+* 基本控件（如标签、文本、按钮、列表框和组合框）的使用
+* 掌握窗体的常用属性和方法
+* 进行基本控件的开发设计
+* 深入掌握系统对话框的属性及代码开发
+* 掌握模式对话与非模式对话的概念及差异
+* 了解模式对话的开发机理
+
+### 1.3.1 简介
+
+WinForm中的常用控件来自于系统System.Windows.Forms.Control，该内裤来自System.Windows.Forms命名空间，该命名空间提供各种控件类，使用这些控件类可以创建丰富的用户界面，具体实现功能由位于该命名空间下的Control系统类派生。Control类将为Form中显示的所有控件提供基本功能，Form类表示应用程序内的窗口，包括对话框、无模式窗口和多文档界面（MDI）客户端窗口及父窗口，同时也可以通过从UserControl类派生而创建自己的控件。
+
+上述所有的这些可视化界面组件统一称之为控件，这些控件都源于System.Windows.Forms命名空间，该命名空间的结构如图1-7所示。
+
+![1568256737277](assets/1568256737277.png)
+
+**案例学习：建立第一个WinForm应用——员工信息录入功能**
+
+本次实验的目标是快速建立如图1-8所示的员工信息录入窗体，使读者快速掌握WinForm中的常用控件，包括标签控件、文本框控件、按钮控件和组合框、列表框控件。
+
+实验步骤如下：
+
+（1）如图1-9所示，从工具箱中拖拽具体的控件到Form窗体上，并更改标签对象和男的text属性为图1-8所示内容。将文本框、列表框和组合框的Enabled属性设置为False，即设置这些控件为不可用状态。
+
+![1568257335793](assets/1568257335793.png)
+
+![1568257352042](assets/1568257352042.png)
+
+（2）如图1-10所示，分别配置列表框和组合框的Items属性，在展开的字符串集合编辑器内输入图1-10所示的具体文本信息。
+
+![1568257470458](assets/1568257470458.png)
+
+（3）双击“添加”按钮，进入.cs文件编辑状态，准备进行开发。下面是”添加“、”取消“和”关闭“按钮的鼠标单击事件的详细代码。
+
+```c#
+/// <summary>
+/// "添加"功能源代码
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
+private void Button1_Click(object sender, EventArgs e)
+{
+    textBox1.Enabled = true;
+    textBox2.Enabled = true;
+    listBox1.Enabled = true;
+    comboBox1.Enabled = true;//设置所有代码为可用状态
+    comboBox1.SelectedIndex = 0;//设置组合框控件默认为第一个
+    textBox1.Focus();//设置第一个文本框后的焦点
+}
+
+/// <summary>
+/// "取消"功能源代码
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
+private void Button2_Click(object sender, EventArgs e)
+{
+    textBox1.Enabled = false;
+    textBox2.Enabled = false;
+    listBox1.Enabled = false;
+    comboBox1.Enabled = false;//设置所有代码为不可用状态
+}
+
+/// <summary>
+/// "关闭"功能源代码
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
+private void Button3_Click(object sender, EventArgs e)
+{
+    Application.Exit();
+    //通知所有消息泵必须终止，并且在处理消息后关闭所有应用程序窗口
+}
+```
+
+> **问题讨论：使用Application.Exit()还是Form.Close()呢？**
+>
+> 不论是Application.Exit()，还是Form.Close()，都可以起到关闭当前窗体的作用，但是初学者需要了解这两种方法的差异。
+>
+> 一个完整的WinForm程序从Application.Run(new Form1)开始，到Application.Exit()结束，最终将执行销毁窗体和回收系统所有的资源任务，软件系统停止；而Form.close()只是关闭当前窗口和对话任务，整体程序不退出。如果只打开了一个窗体，那么这两种方案是一致的。
+>
+> 一般而言，如果只有一个窗口或者是MDI（多文档窗体）里面的主窗口，则执行操作为退出操作，此时Form.close()是一种安全的方式。但如果是打开多个文档窗口的情况，退出系统必须使用Application.Exit()方法。
+
+### 1.3.2 基本控件的使用
+
+**1. Label标签控件**
+
+Label标签控件是使用频率最高的控件，主要用于显示窗体文本信息。其基本的属性和方法定义如表1-1所示。
+
+![1568259529546](assets/1568259529546.png)
+
+**案例学习：标签控件的隐藏，窗口的打开与关闭**
+
+本次实验的目的是建立两个窗体，当单击图1-11所示的登录系统时，可以打开另一个窗体，在单击“文字打开”后显示学校名称，单击“文字隐藏”后隐藏学校名称。通过本案例，读者能快速掌握窗体的打开和关闭技巧，以及标签的隐藏方法。
+
+![1568259656754](assets/1568259656754.png)
+
+实验步骤如下：
+
+（1）从工具箱中拖拽标签控件和linkLabel超链接文本控件到Form窗体上，更改标签文本的颜色、字体和大小属性，填写每个控件的Text属性（文字内容），达到图1-11所示效果。再建立Form2窗体，以便在单击“登录系统”后可以将其打开。
+
+（2）双击“登录系统”超链接文本，进入.cs文件编辑状态，准备进行开发。
+
+```c#
+/// <summary>
+/// 打开新窗口
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
+private void LinkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+{
+    linkLabel1.LinkVisited = true;//确认超文本文件链接是按照链接后的样式呈现
+    Form2 newForm = new Form2();//实例化Form2窗体，命名为newForm
+    newForm.Show();//将实例化后的窗体打开
+    this.Hide();//当前的窗体隐藏
+}
+/// <summary>
+/// 文字打开
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
+private void LinkLabel2_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+{
+    label2.Show();
+}
+/// <summary>
+/// 文字隐藏
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
+private void LinkLabel3_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+{
+    label2.Hide();
+}
+```
+
+**2. TextBox文本框控件和Button按钮控件**
+
+TextBox文本框控件是使用频度较高的控件，主要用于接收或显示用户文本信息。其基本的属性和方法定义如表1-2所示。
+
+![1568274713494](assets/1568274713494.png)
+
+Button按钮控件主要接收用户功能确认操作，以期执行具体的触发事件。其基本的属性和方法定义如表1-3所示。
+
+![1568274760974](assets/1568274760974.png)
+
+**案例学习：用户登录功能设计**
+
+本次实验的目标是通过用户键入名称和密码，判别为非空之后，再判断是否符合系统规定的内容，无论成功或失败都提示用户操作结果。图1-12所示为目标界面。
+
+实验步骤如下：
+
+（1）从工具箱中拖拽标签控件、Button按钮控件以及在工具栏内容的容器中的groupBox控件到From窗体中，调整各个控件的基本属性以达到图1-12所示的效果。特别值得注意的是用户密码文本框的设置工作，其更改属性的办法如图1-13所示。
+
+![1568275197764](assets/1568275197764.png)
+
+![1568275203230](assets/1568275203230.png)
+
+（2）双击“确定”按钮，进入.cs文件编辑状态，准备进行开发，下面给出详细代码。
+
+```c#
+/// <summary>
+/// 用户登录
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
+private void Button1_Click(object sender, EventArgs e)
+{
+    if (textBox1.Text == string.Empty || textBox2.Text == string.Empty)
+    //此处复习逻辑或关系的编写，以及如何判别字符为空
+    {
+        MessageBox.Show("信息禁止为空！", "登录提示");
+        //WinForm环境下的弹出对话框
+        textBox1.Clear();
+        textBox2.Clear();
+        textBox2.Focus();
+        //清空名称和密码文本框，并使名称文本框获得焦点
+        return;
+    }
+    if (!textBox1.Text.Equals("admin") || !textBox2.Text.Equals("admin"))
+    {
+        MessageBox.Show("用户名称或密码为空！", "登录提示");
+        //WinForm环境下的弹出对话框
+        textBox1.Clear();//清理文本框的内容
+        textBox2.Clear();
+        textBox2.Focus();//清空名称和密码文本框，并使得名称文本框获得焦点
+        return;
+    }
+    else
+    {
+        MessageBox.Show("欢迎您登录本系统！", "消息提示");
+        //WinForm环境下的弹出对话框
+        textBox1.Clear();
+        textBox2.Clear();
+        textBox2.Focus();
+    }
+}
+
+/// <summary>
+/// 取消
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
+private void Button2_Click(object sender, EventArgs e)
+{
+    textBox1.Clear();
+    textBox2.Clear();
+    textBox2.Focus();//清空名称和密码文本框，并使名称文本框获得焦点
+}
+```
+
+**问题讨论：代码是正确的，但是否是有效率的代码呢？**
+
+具有相同功能的业务逻辑必须集中处理，只有这样才可以做到代码的高可维护性和高可用性。将上述功能为“清空名称和密码文本框，并使名称文本框获得焦点”的代码改为公用方法clear()，下面给出详细代码。
+
+```c#
+/// <summary>
+/// 用户登录
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
+private void Button1_Click(object sender, EventArgs e)
+{
+    if (textBox1.Text == string.Empty || textBox2.Text == string.Empty)
+    //此处复习逻辑或关系的编写，以及如何判别字符为空
+    {
+        MessageBox.Show("信息禁止为空！", "登录提示");
+        clear();
+        return;
+    }
+    if (!textBox1.Text.Equals("admin") || !textBox2.Text.Equals("admin"))
+    {
+        MessageBox.Show("用户名称或密码为空！", "登录提示");
+        clear();
+        return;
+    }
+    else
+    {
+        MessageBox.Show("欢迎您登录本系统！", "消息提示");
+        clear();
+    }
+}
+
+private void clear()
+//将具有共性的代码通过方法进行封装以提高执行效率
+{
+    textBox1.Clear();
+    textBox2.Clear();
+    textBox2.Focus();
+
+}
+```
+
+**3. ListBox列表框控件**
+
+ListBox列表框控件主要用于显示多行文本信息，以提供用户选择。其基本的属性和方法定义如表1-4所示。
+
+![1568276122175](assets/1568276122175.png)
+
+**案例学习：使用列表框控件**
+
+本次实验的目标是在Form窗体上建立一个列表框控件，窗体初始化时加载信息到列表框中，当用户单击某一行列表框内的信息时，弹出对话框，显示该行具体的文本信息内容。图1-14所示为目标界面。
+
+![1568276673935](assets/1568276673935.png)
+
+实验步骤如下：
+
+（1）从工具箱中拖拽列表框ListBox控件到Form窗体上，调整控件的基本属性，以达到图1-14所示的效果。
+
+（2）双击窗体界面，进入.cs文件编辑状态，准备进行开发。下面给出详细代码。
+
+```c#
+/// <summary>
+/// 窗体初始化加载
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
+private void Form1_Load(object sender, EventArgs e)
+{
+    this.listBox1.Items.Add("软件部");
+    this.listBox1.Items.Add("硬件部");
+    this.listBox1.Items.Add("财务部");
+    this.listBox1.Items.Add("人事部");//通过Add方法实现对下拉列表控件的信息填充
+}
+
+/// <summary>
+/// 单击ListBox的某行，获取该行信息
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
+private void ListBox1_SelectedIndexChanged(object sender, EventArgs e)
+{
+    MessageBox.Show("您选择的部门是：" + listBox1.SelectedItem.ToString() + "，" +
+        "位列第" + listBox1.SelectedIndex.ToString(), "信息提示");
+    //注意学习：listBox的SelectedIndex属性代表选中的行数
+    //注意学习：listBox的SelectedItem属性代表选中的行信息内容
+}
+```
+
+**4. ComboBox组合框控件**
+
+ComboBox组合框控件为典型的多选一控件，主要用于限制用户在多个固定信息情况下选择一一行的文本信息，以确认用户选择逻辑。其基本的属性和方法定义如表1-5所示。
+
+![1568276959076](assets/1568276959076.png)
+
